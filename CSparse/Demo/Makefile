@@ -4,7 +4,7 @@ I = -I../Include
 LDLIBS += -lm
 CS = $(LDFLAGS) ../Lib/libcsparse.a $(LDLIBS)
 
-all: lib cs_demo1 cs_demo2 cs_demo3
+all: lib cs_demo1 cs_demo2 cs_demo3 is_demo
 	- ./cs_demo1 < ../Matrix/t1
 	- ./cs_demo2 < ../Matrix/t1
 	- ./cs_demo2 < ../Matrix/ash219

@@ -4,3 +4,7 @@ The printed residuals should all be small, except for the mbeacxc matrix
 least-squares problem).  See cs_demo.out for the proper output of "make".
 
 Timothy A. Davis, http://www.suitesparse.com
+
+CSparse/Demo modified by Philippe A. A. Pinçon :
+New demos files are prefixed by is_.
+They are using new matrices which are again prefixed by is_.
