@@ -16,7 +16,12 @@ int main (void)
 
     /*                                */
     /* ------------------------------ */
+    /*     display of parameters      */
 
+    printf ("display of parameters : \n") ;
+    printf ("symbolic_test = %b \n", symbolic_test) ;
+    printf ("uplooking_test = %b \n", uplooking_test) ;
+    
     /* ---------------------------------------------------------------------- */
 
     cs *T, *A ;
@@ -45,14 +50,14 @@ int main (void)
     order = 1 ;
     cs_cholsol (order, A, b) ; /* solve Ax=b with Cholesky */
 
-    printf ("Successful execution !") ;
+    printf ("Successful execution ! \n") ;
 
     /* ---------------------------------------------------------------------- */
     // ---------------------------------------------------------------------- //
     /* ---------------------------------------------------------------------- */
 
-    printf ("Decomposition of the function cs_cholsol to analyse the symbolic \
-             analysis and the up-looking cholesky factorization : \n") ;
+    printf ("Decomposition of the function cs_cholsol to analyse the symbolic" \
+             "analysis and the up-looking cholesky factorization : \n") ;
 
     // ---------------------------------------------------------------------- //
 
