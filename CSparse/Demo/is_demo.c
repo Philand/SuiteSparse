@@ -56,15 +56,20 @@ int main (void)
 
     // ---------------------------------------------------------------------- //
 
-    css *S ; /* (cs_symbolic) object initialization */
+    css *S_ ; /* (cs_symbolic) object initialization */
     if (symbolic_test == true)
     {
         /* --- function cs_schol in details --- */
 
+        /* declaration of parameters */
         csi n, *c, *post, *P ;
         cs *C ;
         css *S ;
-        if (!CS_CSC (A)) return (NULL) ;        /* check inputs */
+
+        /* check inputs */
+        if (!CS_CSC (A)) return (NULL) ;
+
+        /* initialization of parameters */
         n = A->n ;
         S = cs_calloc (1, sizeof (css)) ;       /* allocate result S */
         if (!S) return (NULL) ;                 /* out of memory */
@@ -81,34 +86,39 @@ int main (void)
         S->cp = cs_malloc (n+1, sizeof (csi)) ; /* allocate result S->cp */
         S->unz = S->lnz = cs_cumsum (S->cp, c, n) ; /* find column pointers for L */
         cs_free (c) ;
-        return ((S->lnz >= 0) ? S : cs_sfree (S)) ;
+        S_ = ((S->lnz >= 0) ? S : cs_sfree (S)) ;
 
     }
     else
     {
         /* --- we just apply the cs_schol function to then apply cs_chol --- */
 
-        S = cs_schol (order, A) ;    /* ordering and symbolic analysis */
+        S_ = cs_schol (order, A) ;    /* ordering and symbolic analysis */
     }
 
     // ---------------------------------------------------------------------- //
 
-    csn *N ; /* (cs_numeric) object initialization */
+    csn *N_ ; /* (cs_numeric) object initialization */
     if (uplooking_test == true)
     {
         /* L = chol (A, [pinv parent cp]), pinv is optional */
         /* --- csn *cs_chol (const cs *A, const css *S) --- */
 
+        /* declaration of parameters */
         double d, lki, *Lx, *x, *Cx ;
         csi top, i, p, k, n, *Li, *Lp, *cp, *pinv, *s, *c, *parent, *Cp, *Ci ;
         cs *L, *C, *E ;
         csn *N ;
-        if (!CS_CSC (A) || !S || !S->cp || !S->parent) return (NULL) ;
+
+        /* check if we have the good objects */
+        if (!CS_CSC (A) || !S_ || !S_->cp || !S_->parent) return (NULL) ;
+
+        /* initialization of parameters */
         n = A->n ;
         N = cs_calloc (1, sizeof (csn)) ;       /* allocate result */
         c = cs_malloc (2*n, sizeof (csi)) ;     /* get csi workspace */
         x = cs_malloc (n, sizeof (double)) ;    /* get double workspace */
-        cp = S->cp ; pinv = S->pinv ; parent = S->parent ;
+        cp = S_->cp ; pinv = S_->pinv ; parent = S_->parent ;
         C = pinv ? cs_symperm (A, pinv, 1) : ((cs *) A) ;
         E = pinv ? C : NULL ;           /* E is alias for A, or a copy E=A(p,p) */
         if (!N || !c || !x || !C) return (cs_ndone (N, E, c, x, 0)) ;
@@ -151,13 +161,13 @@ int main (void)
             Lx [p] = sqrt (d) ;
         }   
         Lp [n] = cp [n] ;               /* finalize L */
-        N = cs_ndone (N, E, c, x, 1) ; /* success: free E,s,x; return N */
+        N_ = cs_ndone (N, E, c, x, 1) ; /* success: free E,s,x; return N */
     }
     else
     {
         /* --- we just apply the cs_chol function --- */
 
-        N = cs_chol (A, S) ;  /* numeric Cholesky factorization ( up-looking ) */
+        N_ = cs_chol (A, S_) ;  /* numeric Cholesky factorization ( up-looking ) */
     }
 
 
