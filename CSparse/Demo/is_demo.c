@@ -1,5 +1,4 @@
 #include "cs.h"
-#include "stdbool.h"
 /* fichier de demo IS pour la compréhension de CSparse */
 
 int main (void)
@@ -9,19 +8,29 @@ int main (void)
     /* --- Parameters of the demo --- */
     /*                                */
 
-    bool symbolic_test, uplooking_test ;
+    int symbolic_test, uplooking_test ;
 
-    symbolic_test = false ;
-    uplooking_test = true ;
+    symbolic_test = 0 ;
+    uplooking_test = 1 ;
 
     /*                                */
     /* ------------------------------ */
     /*     display of parameters      */
 
+    printf ("==================================================== \n" \
+            "==================================================== \n" \
+            "              Beginning of execution                 \n" \
+            "==================================================== \n" \
+            "==================================================== \n") ;
+
     printf ("display of parameters : \n") ;
-    printf ("symbolic_test = %b \n", symbolic_test) ;
-    printf ("uplooking_test = %b \n", uplooking_test) ;
-    
+    printf ("symbolic_test = %d \n", symbolic_test) ;
+    printf ("uplooking_test = %d \n", uplooking_test) ;
+
+    /*                                */
+    /* ------------------------------ */
+    /* ------------------------------ */
+
     /* ---------------------------------------------------------------------- */
 
     cs *T, *A ;
@@ -62,7 +71,7 @@ int main (void)
     // ---------------------------------------------------------------------- //
 
     css *S_ ; /* (cs_symbolic) object initialization */
-    if (symbolic_test == true)
+    if (symbolic_test == 1)
     {
         /* --- function cs_schol in details --- */
 
@@ -104,8 +113,13 @@ int main (void)
     // ---------------------------------------------------------------------- //
 
     csn *N_ ; /* (cs_numeric) object initialization */
-    if (uplooking_test == true)
+    if (uplooking_test == 1)
     {
+
+        printf ("================================ \n" \
+                "Beginning of the up-looking test \n" \
+                "================================ \n") ;
+
         /* L = chol (A, [pinv parent cp]), pinv is optional */
         /* --- csn *cs_chol (const cs *A, const css *S) --- */
 
@@ -116,7 +130,8 @@ int main (void)
         csn *N ;
 
         /* check if we have the good objects */
-        if (!CS_CSC (A) || !S_ || !S_->cp || !S_->parent) return (NULL) ;
+        if (!CS_CSC (A) || !S_ || !S_->cp || !S_->parent) 
+            return (NULL) ;
 
         /* initialization of parameters */
         n = A->n ;
@@ -126,21 +141,35 @@ int main (void)
         cp = S_->cp ; pinv = S_->pinv ; parent = S_->parent ;
         C = pinv ? cs_symperm (A, pinv, 1) : ((cs *) A) ;
         E = pinv ? C : NULL ;           /* E is alias for A, or a copy E=A(p,p) */
-        if (!N || !c || !x || !C) return (cs_ndone (N, E, c, x, 0)) ;
+        if (!N || !c || !x || !C) 
+            return (cs_ndone (N, E, c, x, 0)) ;
         s = c + n ;
         Cp = C->p ; Ci = C->i ; Cx = C->x ;
         N->L = L = cs_spalloc (n, n, cp [n], 1, 0) ;    /* allocate result */
-        if (!L) return (cs_ndone (N, E, c, x, 0)) ;
+        if (!L) 
+            return (cs_ndone (N, E, c, x, 0)) ;
         Lp = L->p ; Li = L->i ; Lx = L->x ;
-        for (k = 0 ; k < n ; k++) Lp [k] = c [k] = cp [k] ;
+        for (k = 0 ; k < n ; k++) 
+            Lp [k] = c [k] = cp [k] ;
+
+        printf ("================================ \n" \
+                " Beginning of the main for loop  \n" \
+                "================================ \n") ;
+
+        printf("column number : n = %td\n", n) ;
+
         for (k = 0 ; k < n ; k++)       /* compute L(k,:) for L*L' = C */
         {
+            printf ("k = %td\n", k) ;
+
             /* --- Nonzero pattern of L(k,:) ------------------------------------ */
             top = cs_ereach (C, k, parent, s, c) ;      /* find pattern of L(k,:) */
+            printf ("top = %td\n", top) ;
             x [k] = 0 ;                                 /* x (0:k) is now zero */
             for (p = Cp [k] ; p < Cp [k+1] ; p++)       /* x = full(triu(C(:,k))) */
             {
-                if (Ci [p] <= k) x [Ci [p]] = Cx [p] ;
+                if (Ci [p] <= k) 
+                    x [Ci [p]] = Cx [p] ;
             }
             d = x [k] ;                     /* d = C(k,k) */
             x [k] = 0 ;                     /* clear x for k+1st iteration */
@@ -160,7 +189,11 @@ int main (void)
                 Lx [p] = lki ;
             }
             /* --- Compute L(k,k) ----------------------------------------------- */
-            if (d <= 0) return (cs_ndone (N, E, c, x, 0)) ; /* not pos def */
+            if (d <= 0)
+            {
+                printf (" matrix not definite positive ! \n") ;
+                return (cs_ndone (N, E, c, x, 0)) ; /* not pos def */
+            }
             p = c [k]++ ;
             Li [p] = k ;                /* store L(k,k) = sqrt (d) in column k */
             Lx [p] = sqrt (d) ;
