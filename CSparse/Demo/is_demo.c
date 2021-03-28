@@ -1,6 +1,18 @@
 #include "cs.h"
 /* fichier de demo IS pour la compréhension de CSparse */
 
+csi *cs_pinv_identity (csi const *p, csi n)
+{
+    csi k, *pinv ;
+    if (!p) return (NULL) ;                     /* p = NULL denotes identity */
+    pinv = cs_malloc (n, sizeof (csi)) ;        /* allocate result */
+    if (!pinv) return (NULL) ;                  /* out of memory */
+    for (k = 0 ; k < n ; k++) pinv [k] = k ;    /* invert the permutation */
+    return (pinv) ;                             /* return result */
+}
+
+/* ---------------------------------------------------------------------- */
+
 int main (void)
 {
 
@@ -8,10 +20,11 @@ int main (void)
     /* --- Parameters of the demo --- */
     /*                                */
 
-    int symbolic_test, uplooking_test ;
+    int symbolic_test, uplooking_test, leftlooking_test ;
 
-    symbolic_test = 0 ;
+    symbolic_test = 1 ;
     uplooking_test = 1 ;
+    leftlooking_test = 1 ;
 
     /*                                */
     /* ------------------------------ */
@@ -88,7 +101,7 @@ int main (void)
         S = cs_calloc (1, sizeof (css)) ;       /* allocate result S */
         if (!S) return (NULL) ;                 /* out of memory */
         P = cs_amd (order, A) ;                 /* P = amd(A+A'), or natural */
-        S->pinv = cs_pinv (P, n) ;              /* find inverse permutation */
+        S->pinv = cs_pinv_identity (P, n) ;              /* find inverse permutation */
         cs_free (P) ;
         if (order && !S->pinv) return (cs_sfree (S)) ;
         C = cs_symperm (A, S->pinv, 0) ;        /* C = spones(triu(A(P,P))) */
@@ -152,9 +165,9 @@ int main (void)
         for (k = 0 ; k < n ; k++) 
             Lp [k] = c [k] = cp [k] ;
 
-        printf ("================================ \n" \
-                " Beginning of the main for loop  \n" \
-                "================================ \n") ;
+        printf ("================================== \n" \
+                "| Beginning of the main for loop | \n" \
+                "==================================\n") ;
 
         printf("column number : n = %td\n", n, \
                "------------------------------\n") ;
@@ -204,6 +217,7 @@ int main (void)
                 Lx [p] = lki ;
             }
             /* --- Compute L(k,k) ----------------------------------------------- */
+            printf ("--- Compute L(%td,%td) --- \n", k, k) ;
             if (d <= 0)
             {
                 printf (" matrix not definite positive ! \n") ;
@@ -213,6 +227,14 @@ int main (void)
             Li [p] = k ;                /* store L(k,k) = sqrt (d) in column k */
             Lx [p] = sqrt (d) ;
         }   
+    /* ---------------------------------------------------------------------- */
+    // ---------------------------------------------------------------------- //
+    /* ---------------------------------------------------------------------- */
+    /*                  First Try Left-Looking Version                        */
+    /* ---------------------------------------------------------------------- */
+    // ---------------------------------------------------------------------- //
+    /* ---------------------------------------------------------------------- */
+
         Lp [n] = cp [n] ;               /* finalize L */
         N_ = cs_ndone (N, E, c, x, 1) ; /* success: free E,s,x; return N */
     }
@@ -223,6 +245,17 @@ int main (void)
         N_ = cs_chol (A, S_) ;  /* numeric Cholesky factorization ( up-looking ) */
     }
 
+    printf ("------------------------------------------- \n" \
+            "--------- Let's display the result -------- \n") ;
+
+    cs *Lf ;
+    double *Lfx ;
+    csi *Lfp, *Lfi ;
+
+    Lf = N_->L ;
+    Lfp = Lf->p ; Lfi = Lf->i ; Lfx = Lf->x ;
+
+    printf ("L:\n") ; cs_print (Lf, 0) ;
 
     return (0) ;
 }

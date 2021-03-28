@@ -4,7 +4,7 @@ I = -I../Include
 LDLIBS += -lm
 CS = $(LDFLAGS) ../Lib/libcsparse.a $(LDLIBS)
 
-all: lib cs_demo1 cs_demo2 cs_demo3 is_demo
+all: lib cs_demo1 cs_demo2 cs_demo3 is_demo is_demo2
 	- ./cs_demo1 < ../Matrix/t1
 	- ./cs_demo2 < ../Matrix/t1
 	- ./cs_demo2 < ../Matrix/ash219
@@ -18,6 +18,7 @@ all: lib cs_demo1 cs_demo2 cs_demo3 is_demo
 	- ./cs_demo3 < ../Matrix/bcsstk16
 	- ./is_demo < ../Matrix/is_matrix0
 	- ./is_demo < ../Matrix/is_matrix1
+	- ./is_demo2 < ../Matrix/is_matrix1
 
 lib:
 	( cd ../Lib ; $(MAKE) )
@@ -33,6 +34,9 @@ cs_demo3: lib cs_demo3.c cs_demo.c cs_demo.h Makefile
 
 is_demo: lib is_demo.c Makefile
 	$(CC) $(CF) $(I) -o is_demo is_demo.c $(CS)
+
+is_demo2: lib is_demo2.c Makefile
+	$(CC) $(CF) $(I) -o is_demo2 is_demo2.c $(CS)
 
 clean:
 	- $(RM) *.o
