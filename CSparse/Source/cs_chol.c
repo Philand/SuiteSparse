@@ -20,7 +20,8 @@ csn *cs_chol (const cs *A, const css *S)
     N->L = L = cs_spalloc (n, n, cp [n], 1, 0) ;    /* allocate result */
     if (!L) return (cs_ndone (N, E, c, x, 0)) ;
     Lp = L->p ; Li = L->i ; Lx = L->x ;
-    for (k = 0 ; k < n ; k++) Lp [k] = c [k] = cp [k] ;
+    for (k = 0 ; k < n ; k++) 
+        Lp [k] = c [k] = cp [k] ;
     for (k = 0 ; k < n ; k++)       /* compute L(k,:) for L*L' = C */
     {
         /* --- Nonzero pattern of L(k,:) ------------------------------------ */
@@ -28,7 +29,8 @@ csn *cs_chol (const cs *A, const css *S)
         x [k] = 0 ;                                 /* x (0:k) is now zero */
         for (p = Cp [k] ; p < Cp [k+1] ; p++)       /* x = full(triu(C(:,k))) */
         {
-            if (Ci [p] <= k) x [Ci [p]] = Cx [p] ;
+            if (Ci [p] <= k) 
+                x [Ci [p]] = Cx [p] ;
         }
         d = x [k] ;                     /* d = C(k,k) */
         x [k] = 0 ;                     /* clear x for k+1st iteration */

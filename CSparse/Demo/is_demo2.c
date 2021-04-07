@@ -1,82 +1,35 @@
 #include "cs.h"
-/* fichier de demo 2 IS pour la compréhension de CSparse */
+/* fichier de demo 2 (InSimo) pour la compréhension de CSparse */
 
+/* fonction is_min : calcule le minimum d'une liste (nonzeros) d'une taille
+   fixé (size) en excluant l'indice de la colonne (i)                       */
 csi is_min (csi *nonzeros, csi size, csi i)
 {
-    printf("\n ----- fonction is_min ----- \n") ;
-    printf ("size = %td \n", size) ;
     csi min = 1000000000 ;
-    printf ("min = nonzeros [0] = %td \n", min) ;
     for (csi k = 0 ; k < size ; k++)
     {
-        printf ("k = %td  et  nonzeros [%td] = %td \n", k, k, nonzeros [k]) ;
         if (nonzeros[k] < min && nonzeros[k] != i)
         {
             min = nonzeros[k] ;
-            printf ("new min = %td \n", nonzeros [k]) ;
         }
 
     }
     if (min == 1000000000)
         min = -1 ;
-    printf("final min = %td \n", min) ;
-    printf("--- fin fonction is_min --- \n \n") ;
+
     return min ;
 }
 
-/*
-
-P est de taille n
-
-union(csi* Pattern, const csi* L_k, int size )
-{
-    for(int i=0;i<size;++i)
-    {
-        const int index = *L_k[i];
-        Pattern[index] = 1.0;
-    }
-}
-
-on traite la colonne k :
-
-Pattern = malloc(n, -1);
-
-union(Pattern, A_k);
-
-for all j tel que Parent[j] = k dans l'arbre d'élmination
-    union(Pattern, L_j, size(L_j));
-
-
-il faut faire croitre ses tableaux pour stocker les indices de la colonne k
-
-int L_k_size = 0;
-for int i=0;i<n;++i
-    if(P[i] == 1) ++L_k_size;
-
-non_zero_begin_k = la première cas autorisée dans non_zero pour stocker les indices de la colonne k
-for int i=0;i<n;++i
-    if(Pattern[i] == 1 ) non_zero[non_zero_begin_k++] = i;
-
-// pas comme ça dans le code plus bas
-old_size = L_size;
-new_size = resize(L,size(L)+L_k_size);
-ptr = old_size
-for int i=0;i<n;++i
-    if(Pattern[i] == 1 ) L_index[ptr++] = i;
-
-*/
-
+/* fonction is_union : calcule l'union de deux listes */
 csi is_union (csi *list1, csi size1, csi *list2, csi size2, csi i)
 {
-    printf("\n ----- fonction is_union ----- \n") ;
     int already_in ;
-    csi row, nb_new ;
-
-    nb_new = 0 ;
+    csi row, nb_new = 0 ;
 
     for (csi k = 0 ; k < size2 ; k++)
     {
         row = list2 [k] ;
+        already_in = 0 ;
         for (csi j = 0 ; j < size1 ; j++)
         {
             if ( list1[j] == row)
@@ -90,63 +43,51 @@ csi is_union (csi *list1, csi size1, csi *list2, csi size2, csi i)
             nb_new ++ ;
         }
     }
-    printf ("nb_new = %td \n", nb_new) ;
-    printf("\n --- fin fonction is_union --- \n") ;
+
     return nb_new ;
 }
 
 int main (void)
 {
 
-    /* --- Récupération de la matrice --- */
+    /* --- Récupération de la matrice --------------------------------------- */
 
     cs *T, *A ;
     T = cs_load (stdin) ;               /* load triplet matrix T from stdin */
     A = cs_compress (T) ;               /* A = compressed-column form of T */
     cs_spfree (T) ;                     /* clear T */
 
-    /* --- Création de l'object pour notre factorisation --- */
-
-    csn *N ;                             /* (cs_numeric) object initialization */
-    N = cs_calloc (1, sizeof (csn)) ;    /* allocate result */
-
-    /* --- Analyse Symbolique de la matrice A --- */
-    csi k, i, n, *Ap, *Ai, *pi, *nonzeros, *indptr, count, nb_new, start , nb_row_col ;
+    /* --- Analyse Symbolique de la matrice A ------------------------------- */
+    printf (" \n ------- Analyse Symbolique de la matrice A ------- \n") ;
+    csi k, i, n, *Ap, *Ai, *pi, *nonzeros, *indptr, count, nb_new, start ;
+    csi nb_row_col, nb_sup_values, *start_update, *count_update ; 
 
     n = A->n ; Ap = A->p ; Ai = A->i ;
     indptr = cs_malloc (n+1, sizeof(csi)) ;
     indptr [0] = 0 ;
     pi = cs_malloc (n, sizeof(csi)) ;
-    /*for (k = 0 ; k < n ; k++)
-    {
-        pi [k] = -1 ;
-    }*/
     nonzeros = cs_malloc(n*(n+1)/2, sizeof(csi)) ;
-
-    printf ("Tableau de pi à l'initialisation : \n") ;
-    for (k = 0 ; k < n ; k++)
-    {
-        printf ("%td \n", pi [k]) ;
-    }
-    
-    printf ("n = %td \n", n) ;
+    start_update = cs_malloc(n, sizeof (csi)) ;
+    count_update = cs_malloc(n, sizeof (csi)) ;
 
     for (k = 0 ; k < n ; k++)
     {
-        printf ("----------------------------------------- k = %td \n", k) ;
         /* L_k = A_k */
         count = nb_row_col = Ap [k+1] - Ap [k] ;
-        printf ("starting count = %td \n", count) ;
         start = Ap [k] ;
-        printf ("start = Ap [%td] = %td \n", k, start) ;
+        nb_sup_values = 0 ;
+
         for (i = 0 ; i < nb_row_col ; i++)
         {
+            /* on filtre les valeurs de la triangulaire inférieure de A */
             if (Ai[start + i] >= k)
-                nonzeros [indptr [k] + i] = Ai [start + i] ; 
+            {
+                nonzeros [indptr [k] + i - nb_sup_values] = Ai [start + i] ; 
+            }
             else
             {
+                nb_sup_values += 1 ; 
                 count -- ;
-                continue ;
             }
         }
 
@@ -155,44 +96,115 @@ int main (void)
         {
             if (pi [i] == k)
             {
-                printf ("!!! %td a pour parent %td !!! \n", i, k) ;
                 count += is_union(&nonzeros [indptr [k]], count, &nonzeros[indptr [i]], indptr [i+1] - indptr [i], i) ;
             }
         }
-        pi [k] = is_min (&nonzeros [indptr [k]], count, k) ;
-        indptr [k+1] = indptr [k] + count ;
-        // printf ("%td \n", indptr [k]) ;
-        // printf ("%td \n", indptr [k+1]) ;
+        pi [k] = is_min (&nonzeros [indptr [k]], count, k) ;    /* upd etree */
+        indptr [k+1] = indptr [k] + count ;                     /* upd nb_nz */
+        if (indptr [k+1] - indptr [k] > 1)
+        {
+            start_update [k] = nonzeros [indptr [k] + 1] ;      /* upd st_cl */
+            count_update [k] = 1 ;
+        }
+        else
+        {
+            start_update [k] = -1 ;
+            count_update [k] = 0 ;
+        }
     }
 
-    /* --- Vérification de la phase symbolique --- */
+    /* --- Vérification de la phase symbolique ------------------------------ */
     printf (" \n --- Vérification de l'indice pointeur des colonnes : --- \n") ;
     for (k = 0 ; k < n + 1 ; k++)
     {
-        printf ("%td \n", indptr [k]) ;
-    }    
-
+        printf ("%td  ;  ", indptr [k]) ;
+    }
+    printf ("\n") ;
 
     printf (" \n --- Vérification de la structure des non-zéros : --- \n") ;
     for (k = 0 ; k < indptr [n] ; k++)
     {
-        printf ("%td \n", nonzeros [k]) ;
+        printf ("%td  ;  ", nonzeros [k]) ;
     }
+    printf ("\n") ;
 
     printf ("\n --- Tableau de pi à la fin de l'exécution : --- \n") ;
     for (k = 0 ; k < n ; k++)
     {
-        printf ("%td \n", pi [k]) ;
+        printf ("%td  ;  ", pi [k]) ;
     }
+    printf ("\n") ;
 
+    /* --- Factorisation Numérique de la matrice A -------------------------- */
+    printf (" \n ------- Factorisation Numérique de la matrice A ------- \n") ;
+    csn *N ;        /* (cs_numeric) object initialization */
+    cs *L ;
+    csi nb_nonzeros, id, *Lp, *Li, j, p, q ;
+    double *a, *Ax, *Lx, lkj, lkk ;
 
-    /* --- Factorisation Numérique de la matrice A --- */
-    /*
+    N = cs_calloc (1, sizeof (csn)) ;                   /* allocate result */
+    a = cs_malloc(n, sizeof (double)) ;                 /* get csi workspace */
+    Ax = A->x ; Ap = A->p ; Ai = A->i ;
+    N->L = L = cs_spalloc (n, n, indptr [n], 1, 0) ;    /* allocate result */
+    Lp = L->p ; Li = L->i ; Lx = L->x ;
+
+    /* on connait le nombre de valeurs dans chaque colonne */
+    for (k = 0 ; k < n+1 ; k++) 
+        Lp [k] = indptr [k] ;
+    
     for (k = 0 ; k < n ; k++)
     {
+        /* a (k:n) = A (k:n,k) */
+        for (i = Ap [k] ; i < Ap [k+1] ; i++)
+        {
+            a [Ai [i]] = Ax [i] ;
+        }
 
+        /* for j = find (L (k,;)) */
+        for (j = 0 ; j < k ; j++)
+        {
+            /* on traite colonne par colonne */
+            if (start_update [j] == k)
+            {
+                p = count_update [j] ;
+                q = 0 ;
+                lkj = Lx [ Lp [j] + p ] ;
+
+                while ((q != (Lp [k+1] - Lp [k] + 1)) && (p != (Lp [j+1] - Lp [j])))
+                {
+                    if (Li [Lp[j] + p] == nonzeros [Lp [k] + q])
+                    {
+                        a [ nonzeros [Lp [k] + q]] -= Lx [Lp [j] + p] * lkj ;
+                        p ++ ; 
+                        q ++ ;
+                    }
+                    else if (Li [Lp[j] + p] < nonzeros [Lp [k] + q])
+                    {
+                        p ++ ;
+                    }
+                    else if (Li [Lp[j] + p] > nonzeros [Lp [k] + q])
+                    {
+                        q ++ ;
+                    }
+                }
+                count_update [j] ++ ;
+                start_update [j] = nonzeros [indptr [j] + count_update [j]] ;
+            }
+        }
+
+        /* L (k,k) = sqrt (a (k)) */
+        Lx [ Lp [k]] = lkk = sqrt (a [nonzeros [Lp [k]]]) ;
+        Li [ Lp [k]] = nonzeros [Lp [k]];
+
+        /* L (k+1:n,k) = a (k+1:n) / L (k,k) */
+        for (j = Lp [k] + 1 ; j < Lp [k+1] ; j++)
+        {
+            Lx [j] = a [nonzeros [j]] / lkk ;
+            Li [j] = nonzeros [j];
+        }
     }
 
-    */
+    /* --- Vérification de la phase numérique ------------------------------ */
+    printf ("L:\n") ; cs_print (L, 0) ;
 
 }
