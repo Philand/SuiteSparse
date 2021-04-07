@@ -38,6 +38,9 @@ is_demo: lib is_demo.c Makefile
 is_demo2: lib is_demo2.c Makefile
 	$(CC) $(CF) $(I) -o is_demo2 is_demo2.c $(CS)
 
+is_demo3: lib is_demo3.c Makefile
+	$(CC) $(CF) $(I) -o is_demo3 is_demo3.c $(CS)
+
 clean:
 	- $(RM) *.o
 

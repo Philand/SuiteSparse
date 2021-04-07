@@ -1,5 +1,6 @@
 #include "cs.h"
 /* fichier de demo 2 (InSimo) pour la compréhension de CSparse */
+/* première implémentation de la left-looking                  */
 
 /* fonction is_min : calcule le minimum d'une liste (nonzeros) d'une taille
    fixé (size) en excluant l'indice de la colonne (i)                       */
