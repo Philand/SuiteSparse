@@ -15,6 +15,7 @@ csi *cs_pinv_identity (csi const *p, csi n)
 
 int main (void)
 {
+    printf ("=================================================================> IS_DEMO \n") ;
 
     /* ------------------------------ */
     /* --- Parameters of the demo --- */
@@ -30,15 +31,15 @@ int main (void)
     /* ------------------------------ */
     /*     display of parameters      */
 
-    printf ("==================================================== \n" \
+    //printf ("==================================================== \n" \
             "==================================================== \n" \
             "              Beginning of execution                 \n" \
             "==================================================== \n" \
             "==================================================== \n") ;
 
-    printf ("display of parameters : \n") ;
-    printf ("symbolic_test = %d \n", symbolic_test) ;
-    printf ("uplooking_test = %d \n", uplooking_test) ;
+    //printf ("display of parameters : \n") ;
+    //printf ("symbolic_test = %d \n", symbolic_test) ;
+    //printf ("uplooking_test = %d \n", uplooking_test) ;
 
     /*                                */
     /* ------------------------------ */
@@ -53,14 +54,14 @@ int main (void)
     /* ---------------------------------------------------------------------- */
     
     T = cs_load (stdin) ;               /* load triplet matrix T from stdin */
-    printf ("T:\n") ; cs_print (T, 0) ; /* print T */
+    //printf ("T:\n") ; cs_print (T, 0) ; /* print T */
     A = cs_compress (T) ;               /* A = compressed-column form of T */
-    printf ("A:\n") ; cs_print (A, 0) ; /* print A */
+    //printf ("A:\n") ; cs_print (A, 0) ; /* print A */
     cs_spfree (T) ;                     /* clear T */
 
     /* ---------------------------------------------------------------------- */
 
-    printf ("Execution of the cs_cholsol function on the matrix A : \n") ;
+    //printf ("Execution of the cs_cholsol function on the matrix A : \n") ;
 
     m = A->m ;
     n = A-> n ;
@@ -72,13 +73,13 @@ int main (void)
     order = 1 ;
     cs_cholsol (order, A, b) ; /* solve Ax=b with Cholesky */
 
-    printf ("Successful execution ! \n") ;
+    //printf ("Successful execution ! \n") ;
 
     /* ---------------------------------------------------------------------- */
     // ---------------------------------------------------------------------- //
     /* ---------------------------------------------------------------------- */
 
-    printf ("Decomposition of the function cs_cholsol to analyse the symbolic" \
+    //printf ("Decomposition of the function cs_cholsol to analyse the symbolic" \
              "analysis and the up-looking cholesky factorization : \n") ;
 
     // ---------------------------------------------------------------------- //
@@ -129,7 +130,7 @@ int main (void)
     if (uplooking_test == 1)
     {
 
-        printf ("================================ \n" \
+        //printf ("================================ \n" \
                 "Beginning of the up-looking test \n" \
                 "================================ \n") ;
 
@@ -165,48 +166,48 @@ int main (void)
         for (k = 0 ; k < n ; k++) 
             Lp [k] = c [k] = cp [k] ;
 
-        printf ("================================== \n" \
+        //printf ("================================== \n" \
                 "| Beginning of the main for loop | \n" \
                 "==================================\n") ;
 
-        printf("column number : n = %td\n", n, \
+        //printf("column number : n = %td\n", n, \
                "------------------------------\n") ;
 
         for (k = 0 ; k < n ; k++)       /* compute L(k,:) for L*L' = C */
         {
-            printf ("-------------------------------------------------------" \
+            //printf ("-------------------------------------------------------" \
                     "k = %td\n", k) ;
 
-            printf ("--- Nonzero pattern of L(%td,:) --- \n", k) ;
+            //printf ("--- Nonzero pattern of L(%td,:) --- \n", k) ;
             /* --- Nonzero pattern of L(k,:) ------------------------------------ */
             top = cs_ereach (C, k, parent, s, c) ;      /* find pattern of L(k,:) */
-            printf ("top = %td\n", top) ;
+            //printf ("top = %td\n", top) ;
             x [k] = 0 ;                                 /* x (0:k) is now zero */
-            printf ("Start of the intern loop for (p) from Cp[%td] = %td to Cp[%td] = %td \n", k, Cp [k], k, Cp [k+1]) ;
+            //printf ("Start of the intern loop for (p) from Cp[%td] = %td to Cp[%td] = %td \n", k, Cp [k], k, Cp [k+1]) ;
             for (p = Cp [k] ; p < Cp [k+1] ; p++)       /* x = full(triu(C(:,k))) */
             {
                 
                 if (Ci [p] <= k)
                 {
                     x [Ci [p]] = Cx [p] ;
-                    printf ("x [Ci [p]] = Cx [p] = %f \n", x [Ci [p]]) ;
+                    //printf ("x [Ci [p]] = Cx [p] = %f \n", x [Ci [p]]) ;
                 }
             }
             d = x [k] ;                     /* d = C(k,k) */
-            printf ("d = %f\n", d, "d = C(k,k)") ;
+            //printf ("d = %f\n", d, "d = C(k,k)") ;
             x [k] = 0 ;                     /* clear x for k+1st iteration */
             /* --- Triangular solve --------------------------------------------- */
-            printf ("--- Triangular solve --- \n") ;
-            printf ("Start of the intern loop for (top) from %td to n = %td \n", top, n) ;
+            //printf ("--- Triangular solve --- \n") ;
+            //printf ("Start of the intern loop for (top) from %td to n = %td \n", top, n) ;
             for ( ; top < n ; top++)    /* solve L(0:k-1,0:k-1) * x = C(:,k) */
             {
                 i = s [top] ;               /* s [top..n-1] is pattern of L(k,:) */
-                printf ("i = %td \n", i) ;
+                //printf ("i = %td \n", i) ;
                 lki = x [i] / Lx [Lp [i]] ; /* L(k,i) = x (i) / L(i,i) */
-                printf ("lki = %f \n", lki) ;
+                //printf ("lki = %f \n", lki) ;
                 x [i] = 0 ;                 /* clear x for k+1st iteration */
 
-                printf ("Start of the intern loop for from Lp[%td] = %td to c[%td] = %td \n", i, Lp [i] + 1, i, c [i]) ;
+                //printf ("Start of the intern loop for from Lp[%td] = %td to c[%td] = %td \n", i, Lp [i] + 1, i, c [i]) ;
                 for (p = Lp [i] + 1 ; p < c [i] ; p++)
                 {
                     x [Li [p]] -= Lx [p] * lki ;
@@ -217,10 +218,10 @@ int main (void)
                 Lx [p] = lki ;
             }
             /* --- Compute L(k,k) ----------------------------------------------- */
-            printf ("--- Compute L(%td,%td) --- \n", k, k) ;
+            //printf ("--- Compute L(%td,%td) --- \n", k, k) ;
             if (d <= 0)
             {
-                printf (" matrix not definite positive ! \n") ;
+                //printf (" matrix not definite positive ! \n") ;
                 return (cs_ndone (N, E, c, x, 0)) ; /* not pos def */
             }
             p = c [k]++ ;

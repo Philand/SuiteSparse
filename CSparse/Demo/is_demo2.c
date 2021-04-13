@@ -50,9 +50,9 @@ csi is_union (csi *list1, csi size1, csi *list2, csi size2, csi i)
 
 int main (void)
 {
+    printf ("=================================================================> IS_DEMO 2 \n") ;
 
     /* --- Récupération de la matrice --------------------------------------- */
-
     cs *T, *A ;
     T = cs_load (stdin) ;               /* load triplet matrix T from stdin */
     A = cs_compress (T) ;               /* A = compressed-column form of T */
@@ -61,7 +61,7 @@ int main (void)
     /* --- Analyse Symbolique de la matrice A ------------------------------- */
     printf (" \n ------- Analyse Symbolique de la matrice A ------- \n") ;
     csi k, i, n, *Ap, *Ai, *pi, *nonzeros, *indptr, count, nb_new, start ;
-    csi nb_row_col, nb_sup_values, *start_update, *count_update ; 
+    csi nb_row_col, nb_sup_values, *start_update ; 
 
     n = A->n ; Ap = A->p ; Ai = A->i ;
     indptr = cs_malloc (n+1, sizeof(csi)) ;
@@ -69,7 +69,6 @@ int main (void)
     pi = cs_malloc (n, sizeof(csi)) ;
     nonzeros = cs_malloc(n*(n+1)/2, sizeof(csi)) ;
     start_update = cs_malloc(n, sizeof (csi)) ;
-    count_update = cs_malloc(n, sizeof (csi)) ;
 
     for (k = 0 ; k < n ; k++)
     {
@@ -103,15 +102,9 @@ int main (void)
         pi [k] = is_min (&nonzeros [indptr [k]], count, k) ;    /* upd etree */
         indptr [k+1] = indptr [k] + count ;                     /* upd nb_nz */
         if (indptr [k+1] - indptr [k] > 1)
-        {
             start_update [k] = nonzeros [indptr [k] + 1] ;      /* upd st_cl */
-            count_update [k] = 1 ;
-        }
         else
-        {
             start_update [k] = -1 ;
-            count_update [k] = 0 ;
-        }
     }
 
     /* --- Vérification de la phase symbolique ------------------------------ */
@@ -140,7 +133,7 @@ int main (void)
     printf (" \n ------- Factorisation Numérique de la matrice A ------- \n") ;
     csn *N ;        /* (cs_numeric) object initialization */
     cs *L ;
-    csi nb_nonzeros, id, *Lp, *Li, j, p, q ;
+    csi nb_nonzeros, id, *Lp, *Li, j, p, q, *count_update ;
     double *a, *Ax, *Lx, lkj, lkk ;
 
     N = cs_calloc (1, sizeof (csn)) ;                   /* allocate result */
@@ -148,10 +141,20 @@ int main (void)
     Ax = A->x ; Ap = A->p ; Ai = A->i ;
     N->L = L = cs_spalloc (n, n, indptr [n], 1, 0) ;    /* allocate result */
     Lp = L->p ; Li = L->i ; Lx = L->x ;
+    count_update = cs_malloc(n, sizeof (csi)) ;
 
     /* on connait le nombre de valeurs dans chaque colonne */
     for (k = 0 ; k < n+1 ; k++) 
         Lp [k] = indptr [k] ;
+
+    /* on initialise les compteurs d'accès aux colonnes */
+    for (k = 0 ; k < n ; k++)
+    {
+        if (Lp [k+1] - Lp [k] > 1)
+            count_update [k] = 1 ;
+        else
+            count_update [k] = 0 ;
+    }
     
     for (k = 0 ; k < n ; k++)
     {
@@ -167,7 +170,7 @@ int main (void)
             /* on traite colonne par colonne */
             if (start_update [j] == k)
             {
-                p = count_update [j] ;
+                p = count_update [j] ; 
                 q = 0 ;
                 lkj = Lx [ Lp [j] + p ] ;
 
