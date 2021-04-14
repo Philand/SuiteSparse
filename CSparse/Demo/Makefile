@@ -18,8 +18,6 @@ all: lib cs_demo1 cs_demo2 cs_demo3 is_demo is_demo2 is_demo3
 	- ./cs_demo3 < ../Matrix/bcsstk16
 	- ./is_demo < ../Matrix/is_matrix1
 	- ./is_demo3 < ../Matrix/is_matrix1
-	- ./is_demo < ../Matrix/is_matrix0
-	- ./is_demo3 < ../Matrix/is_matrix0
 	- ./is_demo < ../Matrix/is_matrix2
 	- ./is_demo3 < ../Matrix/is_matrix2
 

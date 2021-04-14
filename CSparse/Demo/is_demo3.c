@@ -48,17 +48,37 @@ csi is_union (csi *list1, csi size1, csi *list2, csi size2, csi i)
     return nb_new ;
 }
 
-/* fonction is_push_back */
+csi is_bool_union (csi *P, csi *col_rowind, csi size, csi i)
+{
+    csi row, nb_new ;
+    for (csi k = 0 ; k < size ; k++)
+    {   
+        row = col_rowind [k] ;
+        if (P [row] == 0 && row != i)
+        {
+            P [row] = 1 ;
+            nb_new ++ ;
+        }
+    }
+    return nb_new ;
+}
+
+void is_build_column (csi * rowind, csi *P, csi n)
+{
+    csi k = 0 ;
+    for (csi i = 0 ; i < n ; i++)
+    {
+        if (P [i] == 1)
+            rowind [k++] = i ;
+    }
+}
+
+/* fonction is_write */
 void is_write (csi *L_colind, csi *stack, csi top, csi n)
 {
     csi imax = n - top ;
     for (csi i = 0 ; i < imax  ; i++)
         L_colind [i] = stack [i] ;
-}
-
-csi is_size (csi *tab)
-{
-
 }
 
 int main (void)
@@ -101,7 +121,7 @@ int main (void)
     csi *P ;        /* boolean array pour l'opérateur d'union */
 
     csi count, nb_new, start ;
-    csi nb_row_col, nb_sup_values, *start_update ;
+    csi nb_row_col, nb_sup_values ;
 
     /*============================================*/
     /* initialisation des variables (allocations) */
@@ -118,7 +138,7 @@ int main (void)
     parent2 = cs_malloc (n, sizeof(csi)) ;
     flag = cs_malloc (n, sizeof(csi)) ;
     stack = cs_malloc (n, sizeof(csi)) ;
-    start_update = cs_malloc(n, sizeof (csi)) ;
+    P = cs_malloc (n, sizeof(csi)) ;
 
     /*============================================*/
     /* boucle calculant la structure des colonnes */
@@ -130,35 +150,30 @@ int main (void)
         count = nb_row_col = A_colptr [k+1] - A_colptr [k] ;
         start = A_colptr [k] ;
         nb_sup_values = 0 ;
-
+        for (i=0 ; i<n ; i++)
+            P [i] = 0 ;
+        /*
+        for (i=0 ; i<n ; i++)
+            if ( P [i] != 0 ) error !;
+        */
         for (i = 0 ; i < nb_row_col ; i++)
         {
             /* on filtre les valeurs de la triangulaire inférieure de A */
             if (A_rowind[start + i] >= k)
-            {
-                L_rowind [L_colptr [k] + i - nb_sup_values] = A_rowind [start + i] ; 
-            }
+                P [A_rowind [start +i]] = 1 ;
             else
-            {
-                nb_sup_values += 1 ; 
                 count -- ;
-            }
         }
 
         /* for all i such that pi [k] = i */
         for (i = 0 ; i < k ; i++)
         {
             if (parent2 [i] == k)
-            {
-                count += is_union(&L_rowind [L_colptr [k]], count, &L_rowind [L_colptr [i]], L_colptr [i+1] - L_colptr [i], i) ;
-            }
+                count += is_bool_union(&P [0], &L_rowind [L_colptr [i]], L_colptr [i+1] - L_colptr [i], i) ;
         }
+        is_build_column (&L_rowind [L_colptr [k]], &P [0], n) ;
         parent2 [k] = is_min (&L_rowind [L_colptr [k]], count, k) ;    /* upd etree */
         L_colptr [k+1] = L_colptr [k] + count ;                        /* upd nb_nz */
-        if (L_colptr [k+1] - L_colptr [k] > 1)
-            start_update [k] = L_rowind [L_colptr [k] + 1] ;           /* upd st_cl */
-        else
-            start_update [k] = -1 ;
     }
 
     /*==========================================*/
@@ -193,10 +208,15 @@ int main (void)
                 while (len > 0)
                     stack [--top] = stack [--len] ;
             }
+
+
+            
         }
 
         count += n - top ;
         is_write (&L_colind [L_rowptr [k]], &stack [top], top, n) ;
+
+        /* Maintenant, on peut calculer la colonne k */
     }
 
     L_rowptr [n] = count ;
@@ -293,7 +313,10 @@ int main (void)
     
     for (k = 0 ; k < n ; k++)
     {
-        printf ("=======================================> k = %td \n", k) ;
+        /* reset a at zero for all index */
+        for (i = 0 ; i < n ; i ++)
+            a[i] = 0 ;
+
         /* a (k:n) = A (k:n,k) */
         for (i = A_colptr [k] ; i < A_colptr [k+1] ; i++)
         {
@@ -304,34 +327,37 @@ int main (void)
         for (i = L_rowptr [k] ; i < L_rowptr [k+1] ; i++)
         {
             j = L_colind [i] ;
-            printf ("j = %td \n", j) ;
 
             p = count_update [j] ; 
             q = 0 ;
             lkj = Lx [ Lp [j] + p ] ;
 
-            printf ("p = %td  et  q = %td \n", p, q) ;
-
+            /*
+             int p_begin = Lp[j] + p;
+             int p_end = Lp[j+1];
+              
+              for(int pp = p_begin; pp != pend; ++p)
+              {
+                  double val = Lx[pp];
+                  a[L_rowind[pp] ] -= val*lkj;
+              }
+              
+            */
             while ((q != (Lp [k+1] - Lp [k] + 1)) && (p != (Lp [j+1] - Lp [j])))
             {
-                printf ("Li [Lp [%td] + %td] = Li [%td] = %td \n", j, p, Lp[j]+p, Li [Lp[j] + p]) ;
-                printf ("L_rowind [Lp [%td] + %td] = L_rowind [%td] = %td \n", k, q, Lp [k] + q, L_rowind [Lp [k] + q]) ;
                 if (Li [Lp[j] + p] == L_rowind [Lp [k] + q])
                 {
                     a [L_rowind [Lp [k] + q]] -= Lx [Lp [j] + p] * lkj ;
                     p ++ ; 
                     q ++ ;
-                    printf ("p = %td  et  q = %td \n", p, q) ;
                 }
                 else if (Li [Lp[j] + p] < L_rowind [Lp [k] + q])
                 {
                     p ++ ;
-                    printf ("p = %td  et  q = %td \n", p, q) ;
                 }
                 else if (Li [Lp[j] + p] > L_rowind [Lp [k] + q])
                 {
                     q ++ ;
-                    printf ("p = %td  et  q = %td \n", p, q) ;
                 }
             }
             count_update [j] ++ ;
@@ -354,5 +380,11 @@ int main (void)
     /* --------------------------------------------------------------------- */
     printf ("L:\n") ; cs_print (L, 0) ;
 
+    /* 
+    - ./is_demo < ../Matrix/is_matrix0
+	- ./is_demo3 < ../Matrix/is_matrix0
+	- ./is_demo < ../Matrix/is_matrix2
+	- ./is_demo3 < ../Matrix/is_matrix2
+    */
 
 }
