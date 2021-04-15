@@ -1,52 +1,6 @@
 #include "cs.h"
-/* fichier de demo 2 (InSimo) pour la compréhension de CSparse */
+/* fichier de demo 3 (InSimo) pour la compréhension de CSparse */
 /* deuxième implémentation de la left-looking                  */
-
-/* fonction is_min : calcule le minimum d'une liste (nonzeros) d'une taille
-   fixé (size) en excluant l'indice de la colonne (i)                       */
-csi is_min (csi *nonzeros, csi size, csi i)
-{
-    csi min = 1000000000 ;
-    for (csi k = 0 ; k < size ; k++)
-    {
-        if (nonzeros[k] < min && nonzeros[k] != i)
-        {
-            min = nonzeros[k] ;
-        }
-
-    }
-    if (min == 1000000000)
-        min = -1 ;
-
-    return min ;
-}
-
-/* fonction is_union : calcule l'union de deux listes */
-csi is_union (csi *list1, csi size1, csi *list2, csi size2, csi i)
-{
-    int already_in ;
-    csi row, nb_new = 0 ;
-
-    for (csi k = 0 ; k < size2 ; k++)
-    {
-        row = list2 [k] ;
-        already_in = 0 ;
-        for (csi j = 0 ; j < size1 ; j++)
-        {
-            if ( list1[j] == row)
-            {
-                already_in = 1 ;
-            }
-        }
-        if (already_in == 0 && row != i)
-        {
-            list1 [size1 + nb_new] = row ;
-            nb_new ++ ;
-        }
-    }
-
-    return nb_new ;
-}
 
 csi is_bool_union (csi *P, csi *col_rowind, csi size, csi i)
 {
@@ -69,7 +23,10 @@ void is_build_column (csi * rowind, csi *P, csi n)
     for (csi i = 0 ; i < n ; i++)
     {
         if (P [i] == 1)
+        {
             rowind [k++] = i ;
+            P [i] = 0 ;
+        }
     }
 }
 
@@ -115,12 +72,12 @@ int main (void)
     csi *L_rowptr ; /* tab qui compte le nb d'élts par ligne de L */
     csi *L_colind ; /* tab qui stocke les ind des col pour chaque ligne e L*/
 
-    csi *parent, *parent2 ;   /* etree */
+    csi *parent ;   /* etree */
     csi *flag ;     /* tab pour marquer les noeuds visités (pour 1 itération) */
     csi *stack ;    /* pile pour ajouter les nonzeros de l'itération k */
     csi *P ;        /* boolean array pour l'opérateur d'union */
 
-    csi count, nb_new, start ;
+    csi count1, count2, nb_new, start ;
     csi nb_row_col, nb_sup_values ;
 
     /*============================================*/
@@ -135,60 +92,23 @@ int main (void)
     L_rowind = cs_malloc(A_colptr [n], sizeof(csi)) ;
     L_colind = cs_malloc(A_colptr [n], sizeof(csi)) ;
     parent = cs_malloc (n, sizeof(csi)) ;
-    parent2 = cs_malloc (n, sizeof(csi)) ;
     flag = cs_malloc (n, sizeof(csi)) ;
     stack = cs_malloc (n, sizeof(csi)) ;
     P = cs_malloc (n, sizeof(csi)) ;
 
-    /*============================================*/
-    /* boucle calculant la structure des colonnes */
-    /*============================================*/
+    /*==========================================================*/
+    /* boucle calculant la structure des lignes et des colonnes */
+    /*==========================================================*/
 
-    for (k = 0 ; k < n ; k++)
-    {
-        /* L_k = A_k */
-        count = nb_row_col = A_colptr [k+1] - A_colptr [k] ;
-        start = A_colptr [k] ;
-        nb_sup_values = 0 ;
-        for (i=0 ; i<n ; i++)
-            P [i] = 0 ;
-        /*
-        for (i=0 ; i<n ; i++)
-            if ( P [i] != 0 ) error !;
-        */
-        for (i = 0 ; i < nb_row_col ; i++)
-        {
-            /* on filtre les valeurs de la triangulaire inférieure de A */
-            if (A_rowind[start + i] >= k)
-                P [A_rowind [start +i]] = 1 ;
-            else
-                count -- ;
-        }
-
-        /* for all i such that pi [k] = i */
-        for (i = 0 ; i < k ; i++)
-        {
-            if (parent2 [i] == k)
-                count += is_bool_union(&P [0], &L_rowind [L_colptr [i]], L_colptr [i+1] - L_colptr [i], i) ;
-        }
-        is_build_column (&L_rowind [L_colptr [k]], &P [0], n) ;
-        parent2 [k] = is_min (&L_rowind [L_colptr [k]], count, k) ;    /* upd etree */
-        L_colptr [k+1] = L_colptr [k] + count ;                        /* upd nb_nz */
-    }
-
-    /*==========================================*/
-    /* boucle calculant la structure des lignes */
-    /*==========================================*/
-
-    /* structure des lignes */
-    count = 0 ;
+    L_rowptr [0] = count1 = 0 ;
     for (k = 0 ; k < n ; k++)
     {
         parent [k] = -1 ;
-        L_rowptr [k] = count ;
+        L_rowptr [k] = count1 ;
         flag [k] = k ;
         top = n ;
 
+        /* structure de la ligne k */
         for (p = A_colptr [k] ; p < A_colptr [k+1] ; p++)
         {
             i = A_rowind[p] ;
@@ -207,19 +127,39 @@ int main (void)
 
                 while (len > 0)
                     stack [--top] = stack [--len] ;
-            }
-
-
-            
+            }    
         }
 
-        count += n - top ;
+        count1 += n - top ;
         is_write (&L_colind [L_rowptr [k]], &stack [top], top, n) ;
+        L_rowptr [k+1] = count1 ;
 
-        /* Maintenant, on peut calculer la colonne k */
+        /* structure de la colonne k */
+        
+        /* L_k = A_k */
+        count2 = nb_row_col = A_colptr [k+1] - A_colptr [k] ;
+        start = A_colptr [k] ;
+        nb_sup_values = 0 ;
+
+        for (i = 0 ; i < nb_row_col ; i++)
+        {
+            /* on filtre les valeurs de la triangulaire inférieure de A */
+            if (A_rowind[start + i] >= k)
+                P [A_rowind [start +i]] = 1 ;
+            else
+                count2 -- ;
+        }
+
+        /* for all i such that pi [k] = i */
+        for (i = L_rowptr [k] ; i < L_rowptr [k+1] ; i++)
+        {
+            j = L_colind [i] ;
+            if (parent [j] == k)
+                count2 += is_bool_union(&P [0], &L_rowind [L_colptr [j]], L_colptr [j+1] - L_colptr [j], j) ;
+        }
+        is_build_column (&L_rowind [L_colptr [k]], &P [0], n) ;
+        L_colptr [k+1] = L_colptr [k] + count2 ;                        /* upd nb_nz */
     }
-
-    L_rowptr [n] = count ;
 
     /* ---------------------------------------------------------------------- */
     /* --- Vérification de la phase symbolique ------------------------------ */
@@ -253,13 +193,6 @@ int main (void)
     printf ("\n") ;
 
     printf ("\n --- Tableau de parent à la fin de l'exécution : --- \n") ;
-    for (k = 0 ; k < n ; k++)
-    {
-        printf ("%td  ;  ", parent2 [k]) ;
-    }
-    printf ("\n") ;
-
-    printf ("\n --- Tableau de parent2 à la fin de l'exécution : --- \n") ;
     for (k = 0 ; k < n ; k++)
     {
         printf ("%td  ;  ", parent [k]) ;
@@ -313,10 +246,6 @@ int main (void)
     
     for (k = 0 ; k < n ; k++)
     {
-        /* reset a at zero for all index */
-        for (i = 0 ; i < n ; i ++)
-            a[i] = 0 ;
-
         /* a (k:n) = A (k:n,k) */
         for (i = A_colptr [k] ; i < A_colptr [k+1] ; i++)
         {
@@ -330,47 +259,24 @@ int main (void)
 
             p = count_update [j] ; 
             q = 0 ;
-            lkj = Lx [ Lp [j] + p ] ;
-
-            /*
-             int p_begin = Lp[j] + p;
-             int p_end = Lp[j+1];
+            lkj = Lx [Lp [j] + p] ;
               
-              for(int pp = p_begin; pp != pend; ++p)
-              {
-                  double val = Lx[pp];
-                  a[L_rowind[pp] ] -= val*lkj;
-              }
+            for(int q = Lp [j] + p ; q < Lp [j+1] ; q++)
+                  a [L_rowind[q]] -= Lx [q]*lkj;
               
-            */
-            while ((q != (Lp [k+1] - Lp [k] + 1)) && (p != (Lp [j+1] - Lp [j])))
-            {
-                if (Li [Lp[j] + p] == L_rowind [Lp [k] + q])
-                {
-                    a [L_rowind [Lp [k] + q]] -= Lx [Lp [j] + p] * lkj ;
-                    p ++ ; 
-                    q ++ ;
-                }
-                else if (Li [Lp[j] + p] < L_rowind [Lp [k] + q])
-                {
-                    p ++ ;
-                }
-                else if (Li [Lp[j] + p] > L_rowind [Lp [k] + q])
-                {
-                    q ++ ;
-                }
-            }
             count_update [j] ++ ;
         }
 
         /* L (k,k) = sqrt (a (k)) */
         Lx [ Lp [k]] = lkk = sqrt (a [L_rowind [Lp [k]]]) ;
+        a [L_rowind [Lp [k]]] = 0 ;
         Li [ Lp [k]] = L_rowind [Lp [k]];
 
         /* L (k+1:n,k) = a (k+1:n) / L (k,k) */
         for (j = Lp [k] + 1 ; j < Lp [k+1] ; j++)
         {
             Lx [j] = a [L_rowind [j]] / lkk ;
+            a [L_rowind [j]] = 0 ;
             Li [j] = L_rowind [j];
         }
     }
@@ -379,12 +285,5 @@ int main (void)
     /* --- Vérification de la phase numérique ------------------------------ */
     /* --------------------------------------------------------------------- */
     printf ("L:\n") ; cs_print (L, 0) ;
-
-    /* 
-    - ./is_demo < ../Matrix/is_matrix0
-	- ./is_demo3 < ../Matrix/is_matrix0
-	- ./is_demo < ../Matrix/is_matrix2
-	- ./is_demo3 < ../Matrix/is_matrix2
-    */
 
 }
