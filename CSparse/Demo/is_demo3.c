@@ -2,32 +2,32 @@
 /* fichier de demo 3 (InSimo) pour la compréhension de CSparse */
 /* deuxième implémentation de la left-looking                  */
 
-csi is_bool_union (csi *P, csi *col_rowind, csi size, csi i)
+void is_bool_union (csi *P, csi *col_rowind, csi size, csi i)
 {
-    csi row, nb_new ;
+    csi row ;
     for (csi k = 0 ; k < size ; k++)
     {   
         row = col_rowind [k] ;
         if (P [row] == 0 && row != i)
-        {
             P [row] = 1 ;
-            nb_new ++ ;
-        }
     }
-    return nb_new ;
 }
 
-void is_build_column (csi * rowind, csi *P, csi n)
+// transformer en int --> renvoyer le nombre de non zéros de la colonne
+csi is_build_column (csi * rowind, csi *P, csi n)
 {
     csi k = 0 ;
+    csi nb_nz_col = 0 ;
     for (csi i = 0 ; i < n ; i++)
     {
         if (P [i] == 1)
         {
             rowind [k++] = i ;
             P [i] = 0 ;
+            nb_nz_col ++ ;
         }
     }
+    return nb_nz_col ;
 }
 
 /* fonction is_write */
@@ -77,7 +77,7 @@ int main (void)
     csi *stack ;    /* pile pour ajouter les nonzeros de l'itération k */
     csi *P ;        /* boolean array pour l'opérateur d'union */
 
-    csi count1, count2, nb_new, start ;
+    csi nb_nz_col, nb_new, start ;
     csi nb_row_col, nb_sup_values ;
 
     /*============================================*/
@@ -100,11 +100,10 @@ int main (void)
     /* boucle calculant la structure des lignes et des colonnes */
     /*==========================================================*/
 
-    L_rowptr [0] = count1 = 0 ;
+    L_rowptr [0] = 0 ;
     for (k = 0 ; k < n ; k++)
     {
         parent [k] = -1 ;
-        L_rowptr [k] = count1 ;
         flag [k] = k ;
         top = n ;
 
@@ -129,15 +128,14 @@ int main (void)
                     stack [--top] = stack [--len] ;
             }    
         }
-
-        count1 += n - top ;
+        
         is_write (&L_colind [L_rowptr [k]], &stack [top], top, n) ;
-        L_rowptr [k+1] = count1 ;
+        L_rowptr [k+1] += L_rowptr [k] + n - top ;
 
         /* structure de la colonne k */
         
         /* L_k = A_k */
-        count2 = nb_row_col = A_colptr [k+1] - A_colptr [k] ;
+        nb_row_col = A_colptr [k+1] - A_colptr [k] ;
         start = A_colptr [k] ;
         nb_sup_values = 0 ;
 
@@ -146,8 +144,6 @@ int main (void)
             /* on filtre les valeurs de la triangulaire inférieure de A */
             if (A_rowind[start + i] >= k)
                 P [A_rowind [start +i]] = 1 ;
-            else
-                count2 -- ;
         }
 
         /* for all i such that pi [k] = i */
@@ -155,10 +151,10 @@ int main (void)
         {
             j = L_colind [i] ;
             if (parent [j] == k)
-                count2 += is_bool_union(&P [0], &L_rowind [L_colptr [j]], L_colptr [j+1] - L_colptr [j], j) ;
+                is_bool_union(&P [0], &L_rowind [L_colptr [j]], L_colptr [j+1] - L_colptr [j], j) ;
         }
-        is_build_column (&L_rowind [L_colptr [k]], &P [0], n) ;
-        L_colptr [k+1] = L_colptr [k] + count2 ;                        /* upd nb_nz */
+        nb_nz_col = is_build_column (&L_rowind [L_colptr [k]], &P [0], n) ;
+        L_colptr [k+1] = L_colptr [k] + nb_nz_col ;                        /* upd nb_nz */
     }
 
     /* ---------------------------------------------------------------------- */
@@ -213,7 +209,7 @@ int main (void)
     
     csn *N ;        /* (cs_numeric) object initialization */
     cs *L ;
-    csi *Lp, *Li, q, *count_update ;
+    csi *Lp, *Li, *Lpk ;
     double *a, *Ax, *Lx, lkj, lkk ;
 
     /*============================================*/
@@ -223,21 +219,21 @@ int main (void)
     N = cs_calloc (1, sizeof (csn)) ;                   /* allocate result */
     a = cs_malloc(n, sizeof (double)) ;                 /* get csi workspace */
     Ax = A->x ;
-    N->L = L = cs_spalloc (n, n, L_colptr [n], 1, 0) ;    /* allocate result */
+    N->L = L = cs_spalloc (n, n, L_colptr [n], 1, 0) ;  /* allocate result */
     Lp = L->p ; Li = L->i ; Lx = L->x ;
-    count_update = cs_malloc(n, sizeof (csi)) ;
+    Lpk = cs_malloc(n, sizeof (csi)) ;                  /* current pointer for column k of L */
 
     /* on connait le nombre de valeurs dans chaque colonne */
     for (k = 0 ; k < n+1 ; k++) 
         Lp [k] = L_colptr [k] ;
 
-    /* on initialise les compteurs d'accès aux colonnes */
     for (k = 0 ; k < n ; k++)
     {
+        // const int nnz = Lp[k+1]-Lp[k]
+        // assert(nnz >= 1)
+        // if( nnz > 1) Lpk[k] = 1; /// (Lp[k] + 1) 
         if (Lp [k+1] - Lp [k] > 1)
-            count_update [k] = 1 ;
-        else
-            count_update [k] = 0 ;
+            Lpk [k] = Lp [k] + 1 ;
     }
 
     /*=====================================================*/
@@ -257,26 +253,25 @@ int main (void)
         {
             j = L_colind [i] ;
 
-            p = count_update [j] ; 
-            q = 0 ;
-            lkj = Lx [Lp [j] + p] ;
+            p = 0 ;
+            lkj = Lx [Lpk [j]] ;
               
-            for(int q = Lp [j] + p ; q < Lp [j+1] ; q++)
-                  a [L_rowind[q]] -= Lx [q]*lkj;
+            for (int p = Lpk [j] ; p < Lp [j+1] ; p++)
+                  a [L_rowind[p]] -= Lx [p]*lkj;
               
-            count_update [j] ++ ;
+            Lpk [j] ++ ;
         }
 
         /* L (k,k) = sqrt (a (k)) */
         Lx [ Lp [k]] = lkk = sqrt (a [L_rowind [Lp [k]]]) ;
-        a [L_rowind [Lp [k]]] = 0 ;
+        a [L_rowind [Lp [k]]] = 0.0 ;
         Li [ Lp [k]] = L_rowind [Lp [k]];
 
         /* L (k+1:n,k) = a (k+1:n) / L (k,k) */
         for (j = Lp [k] + 1 ; j < Lp [k+1] ; j++)
         {
             Lx [j] = a [L_rowind [j]] / lkk ;
-            a [L_rowind [j]] = 0 ;
+            a [L_rowind [j]] = 0.0 ;
             Li [j] = L_rowind [j];
         }
     }
