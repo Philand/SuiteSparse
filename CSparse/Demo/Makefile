@@ -1,10 +1,10 @@
-CF = $(CFLAGS) $(CPPFLAGS) $(TARGET_ARCH) -O
+CF = $(CFLAGS) $(CPPFLAGS) $(TARGET_ARCH) -O -g
 I = -I../Include
 
 LDLIBS += -lm
 CS = $(LDFLAGS) ../Lib/libcsparse.a $(LDLIBS)
 
-all: lib cs_demo1 cs_demo2 cs_demo3 is_demo is_demo2 is_demo3
+all: lib cs_demo1 cs_demo2 cs_demo3 is_demo is_demo2 is_demo3 is_left_demo
 	- ./cs_demo1 < ../Matrix/t1
 	- ./cs_demo2 < ../Matrix/t1
 	- ./cs_demo2 < ../Matrix/ash219
@@ -16,12 +16,10 @@ all: lib cs_demo1 cs_demo2 cs_demo3 is_demo is_demo2 is_demo3
 	- ./cs_demo2 < ../Matrix/bcsstk16
 	- ./cs_demo3 < ../Matrix/bcsstk01
 	- ./cs_demo3 < ../Matrix/bcsstk16
-	- ./is_demo < ../Matrix/is_matrix1
-	- ./is_demo3 < ../Matrix/is_matrix1
-	- ./is_demo < ../Matrix/is_matrix2
-	- ./is_demo3 < ../Matrix/is_matrix2
-	- ./is_demo < ../Matrix/is_matrix0
-	- ./is_demo3 < ../Matrix/is_matrix0
+	- valgrind --tool=memcheck --leak-check=full --track-origins=yes -s ./is_left_demo < ../Matrix/is_matrix0
+	- valgrind --tool=memcheck --leak-check=full --track-origins=yes -s ./is_left_demo < ../Matrix/is_matrix1
+	- valgrind --tool=memcheck --leak-check=full --track-origins=yes -s ./is_left_demo < ../Matrix/is_matrix2
+
 
 lib:
 	( cd ../Lib ; $(MAKE) )
@@ -44,10 +42,13 @@ is_demo2: lib is_demo2.c Makefile
 is_demo3: lib is_demo3.c Makefile
 	$(CC) $(CF) $(I) -o is_demo3 is_demo3.c $(CS)
 
+is_left_demo: lib is_left_demo.c Makefile
+	$(CC) $(CF) $(I) -o is_left_demo is_left_demo.c $(CS)
+
 clean:
 	- $(RM) *.o
 
 purge: distclean
 
 distclean: clean
-	- $(RM) -r cs_demo1 cs_demo2 cs_demo3 *.a *.dSYM *.obj *.dll
+	- $(RM) -r cs_demo1 cs_demo2 cs_demo3 is_demo1 is_demo2 is_demo3 is_left_demo *.a *.dSYM *.obj *.dll

@@ -14,15 +14,15 @@ void is_bool_union (csi *P, csi *col_rowind, csi size, csi i)
 }
 
 // transformer en int --> renvoyer le nombre de non zéros de la colonne
-csi is_build_column (csi * rowind, csi *P, csi n)
+csi is_build_column (csi * rowind, csi *P, csi n, csi k)
 {
-    csi k = 0 ;
+    csi j = 0 ;
     csi nb_nz_col = 0 ;
-    for (csi i = 0 ; i < n ; i++)
+    for (csi i = k ; i < n ; i++)
     {
         if (P [i] == 1)
         {
-            rowind [k++] = i ;
+            rowind [j++] = i ;
             P [i] = 0 ;
             nb_nz_col ++ ;
         }
@@ -77,8 +77,7 @@ int main (void)
     csi *stack ;    /* pile pour ajouter les nonzeros de l'itération k */
     csi *P ;        /* boolean array pour l'opérateur d'union */
 
-    csi nb_nz_col, nb_new, start ;
-    csi nb_row_col, nb_sup_values ;
+    csi nb_nz_col ;
 
     /*============================================*/
     /* initialisation des variables (allocations) */
@@ -95,12 +94,13 @@ int main (void)
     flag = cs_malloc (n, sizeof(csi)) ;
     stack = cs_malloc (n, sizeof(csi)) ;
     P = cs_malloc (n, sizeof(csi)) ;
+    for (k = 0 ; k < n ; k++)
+        P [k] = 0 ;
 
     /*==========================================================*/
     /* boucle calculant la structure des lignes et des colonnes */
     /*==========================================================*/
 
-    L_rowptr [0] = 0 ;
     for (k = 0 ; k < n ; k++)
     {
         parent [k] = -1 ;
@@ -130,21 +130,13 @@ int main (void)
         }
         
         is_write (&L_colind [L_rowptr [k]], &stack [top], top, n) ;
-        L_rowptr [k+1] += L_rowptr [k] + n - top ;
+        L_rowptr [k+1] = L_rowptr [k] + n - top ;
 
         /* structure de la colonne k */
         
         /* L_k = A_k */
-        nb_row_col = A_colptr [k+1] - A_colptr [k] ;
-        start = A_colptr [k] ;
-        nb_sup_values = 0 ;
-
-        for (i = 0 ; i < nb_row_col ; i++)
-        {
-            /* on filtre les valeurs de la triangulaire inférieure de A */
-            if (A_rowind[start + i] >= k)
-                P [A_rowind [start +i]] = 1 ;
-        }
+        for (i = A_colptr [k] ; i < A_colptr [k+1] ; i++)
+            P [A_rowind [i]] = 1 ;
 
         /* for all i such that pi [k] = i */
         for (i = L_rowptr [k] ; i < L_rowptr [k+1] ; i++)
@@ -153,7 +145,7 @@ int main (void)
             if (parent [j] == k)
                 is_bool_union(&P [0], &L_rowind [L_colptr [j]], L_colptr [j+1] - L_colptr [j], j) ;
         }
-        nb_nz_col = is_build_column (&L_rowind [L_colptr [k]], &P [0], n) ;
+        nb_nz_col = is_build_column (&L_rowind [L_colptr [k]], &P [0], n, k) ;
         L_colptr [k+1] = L_colptr [k] + nb_nz_col ;                        /* upd nb_nz */
     }
 
@@ -234,6 +226,8 @@ int main (void)
         // if( nnz > 1) Lpk[k] = 1; /// (Lp[k] + 1) 
         if (Lp [k+1] - Lp [k] > 1)
             Lpk [k] = Lp [k] + 1 ;
+        else
+            Lpk [k] = -1 ;
     }
 
     /*=====================================================*/
@@ -252,8 +246,6 @@ int main (void)
         for (i = L_rowptr [k] ; i < L_rowptr [k+1] ; i++)
         {
             j = L_colind [i] ;
-
-            p = 0 ;
             lkj = Lx [Lpk [j]] ;
               
             for (int p = Lpk [j] ; p < Lp [j+1] ; p++)
@@ -281,4 +273,21 @@ int main (void)
     /* --------------------------------------------------------------------- */
     printf ("L:\n") ; cs_print (L, 0) ;
 
+    /* --------------------------------------------------------------------- */
+    /* --- Free ------------------------------------------------------------ */
+    /* --------------------------------------------------------------------- */
+    cs_free (L_rowptr) ;
+    cs_free (L_colptr) ;
+    cs_free (L_rowind) ;
+    cs_free (L_colind) ;
+    cs_free (parent) ;
+    cs_free (stack) ;
+    cs_free (P) ;
+    cs_free (flag) ;
+    cs_free (Lpk) ;
+    cs_free (a) ;
+    cs_spfree (A) ;
+    cs_nfree (N) ;
+
+    return 0 ;
 }

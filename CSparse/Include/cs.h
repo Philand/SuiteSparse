@@ -56,6 +56,20 @@ cs *cs_spfree (cs *A) ;
 csi cs_sprealloc (cs *A, csi nzmax) ;
 void *cs_malloc (csi n, size_t size) ;
 
+/* --- is_functions and structure for left-looking Cholesky ----------------- */
+void is_bool_union (csi *P, csi *col_rowind, csi size, csi i) ;
+csi is_build_column (csi *rowind, csi *P, csi n, csi k) ;
+void is_write (csi *L_colind, csi *stack, csi top, csi n) ;
+
+typedef struct is_symbolic  /* symbolic left-looking Cholesky */
+{
+    csi *parent ;   /* elimination tree */
+    csi *L_colptr ; /* column pointers */
+    csi *L_rowind ; /* row indices */
+    csi *L_rowptr ; /* row pointers */
+    csi *L_colind ; /* column indices */
+} iss ;
+
 /* --- secondary CSparse routines and data structures ----------------------- */
 typedef struct cs_symbolic  /* symbolic Cholesky, LU, or QR analysis */
 {
@@ -87,6 +101,12 @@ typedef struct cs_dmperm_results    /* cs_dmperm or cs_scc output */
     csi rr [5] ;    /* coarse row decomposition */
     csi cc [5] ;    /* coarse column decomposition */
 } csd ;
+
+/* functions for left-looking Cholesky */
+csn *is_left_chol (const cs *A, const iss *S) ;
+iss *is_left_schol (csi order, const cs *A) ;
+csi is_left_cholsol (csi order, const cs *A, double *b) ;
+iss *is_sfree (iss *S) ;
 
 csi *cs_amd (csi order, const cs *A) ;
 csn *cs_chol (const cs *A, const css *S) ;
