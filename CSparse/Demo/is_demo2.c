@@ -60,7 +60,7 @@ int main (void)
 
     /* --- Analyse Symbolique de la matrice A ------------------------------- */
     printf (" \n ------- Analyse Symbolique de la matrice A ------- \n") ;
-    csi k, i, n, *Ap, *Ai, *pi, *nonzeros, *indptr, count, nb_new, start ;
+    csi k, i, n, *Ap, *Ai, *pi, *nonzeros, *indptr, count, start ;
     csi nb_row_col, nb_sup_values, *start_update ; 
 
     n = A->n ; Ap = A->p ; Ai = A->i ;
@@ -133,7 +133,7 @@ int main (void)
     printf (" \n ------- Factorisation Numérique de la matrice A ------- \n") ;
     csn *N ;        /* (cs_numeric) object initialization */
     cs *L ;
-    csi nb_nonzeros, id, *Lp, *Li, j, p, q, *count_update ;
+    csi *Lp, *Li, j, p, q, *count_update ;
     double *a, *Ax, *Lx, lkj, lkk ;
 
     N = cs_calloc (1, sizeof (csn)) ;                   /* allocate result */

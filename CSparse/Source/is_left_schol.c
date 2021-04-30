@@ -1,5 +1,7 @@
 #include "cs.h"
 
+/* --- is_left_schol.c --- */
+
 /* union of 2 columns of their nonzeros */
 void is_bool_union (csi *P, csi *col_rowind, csi size, csi i)
 {
@@ -43,7 +45,6 @@ iss *is_left_schol (csi order, const cs *A)
     if (!CS_CSC (A)) return (NULL) ;    /* check inputs */
 
     iss *S ;
-    // csi *Perm ;
     csi k, i, j, p; /* variables incrémentales */
     csi len, top ;
     csi nb_nz_col ;
@@ -63,17 +64,13 @@ iss *is_left_schol (csi order, const cs *A)
     if (!S) return (NULL) ; /* out of memory */
 
     n = A->n ; A_colptr = A->p ; A_rowind = A->i ;
-    // L_colptr = cs_malloc (n+1, sizeof(csi)) ;
+
     L_colptr = S->L_colptr ;
     L_colptr [0] = 0 ;
-    // L_rowptr = cs_malloc (n+1, sizeof(csi)) ;
     L_rowptr = S->L_rowptr ;
     L_rowptr [0] = 0 ;
-    // L_rowind = cs_malloc(A_colptr [n], sizeof(csi)) ;
-    L_rowind = S-> L_rowind ;
-    //L_colind = cs_malloc(A_colptr [n], sizeof(csi)) ;
-    L_colind = S-> L_colind ;
-    //parent = cs_malloc (n, sizeof(csi)) ;
+    L_colind = S->L_colind ;
+    L_rowind = S->L_rowind ;
     parent = S->parent ;
     flag = cs_malloc (n, sizeof(csi)) ;
     stack = cs_malloc (n, sizeof(csi)) ;
@@ -129,21 +126,44 @@ iss *is_left_schol (csi order, const cs *A)
         L_colptr [k+1] = L_colptr [k] + nb_nz_col ;
     }
 
+    printf (" \n --- Vérification de l'indice pointeur des colonnes : --- \n") ;
+    for (k = 0 ; k < n + 1 ; k++)
+    {
+        printf ("%td  ;  ", L_colptr [k]) ;
+    }
+    printf ("\n") ;
+
+    printf (" \n --- Vérification de la structure des non-zéros : --- \n") ;
+    for (k = 0 ; k < L_colptr [n] ; k++)
+    {
+        printf ("%td  ;  ", L_rowind [k]) ;
+    }
+    printf ("\n") ;
+
+        printf (" \n --- Vérification de l'indice pointeur des lignes : --- \n") ;
+    for (k = 0 ; k < n + 1 ; k++)
+    {
+        printf ("%td  ;  ", L_rowptr [k]) ;
+    }
+    printf ("\n") ;
+
+    printf (" \n --- Vérification de la structure des non-zéros : --- \n") ;
+    for (k = 0 ; k < L_rowptr [n] ; k++)
+    {
+        printf ("%td  ;  ", L_colind [k]) ;
+    }
+    printf ("\n") ;
+
+    printf ("\n --- Tableau de parent à la fin de l'exécution : --- \n") ;
+    for (k = 0 ; k < n ; k++)
+    {
+        printf ("%td  ;  ", parent [k]) ;
+    }
+    printf ("\n") ;
+
     cs_free (stack) ;
     cs_free (P) ;
     cs_free (flag) ;
-
-    // S->L_colind = L_colind ;
-    // S->L_colptr = L_colptr ;
-    // S->L_rowind = L_rowind ;
-    // S->L_rowptr = L_rowptr ;
-    // S->parent = parent ;
-
-    // cs_free (L_rowptr) ;
-    // cs_free (L_colptr) ;
-    // cs_free (L_rowind) ;
-    // cs_free (L_colind) ;
-    // cs_free (parent) ;
 
     return S ;
 }

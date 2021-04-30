@@ -5,6 +5,7 @@ css *cs_schol (csi order, const cs *A)
     csi n, *c, *post, *P ;
     cs *C ;
     css *S ;
+    // cs *A_perm ;
     if (!CS_CSC (A)) return (NULL) ;        /* check inputs */
     n = A->n ;
     S = cs_calloc (1, sizeof (css)) ;       /* allocate result S */
@@ -13,6 +14,9 @@ css *cs_schol (csi order, const cs *A)
     S->pinv = cs_pinv (P, n) ;              /* find inverse permutation */
     cs_free (P) ;
     if (order && !S->pinv) return (cs_sfree (S)) ;
+    // A_perm = cs_permute (A, S->pinv, NULL, 1) ;
+    // printf (" MATRIX A permuted : \n") ;
+    // cs_print (A_perm, 0) ;
     C = cs_symperm (A, S->pinv, 0) ;        /* C = spones(triu(A(P,P))) */
     S->parent = cs_etree (C, 0) ;           /* find etree of C */
     post = cs_post (S->parent, n) ;         /* postorder the etree */

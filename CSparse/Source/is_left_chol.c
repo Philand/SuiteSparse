@@ -1,8 +1,13 @@
 #include "cs.h"
 
+/* --- is_left_chol.c --- */
+
 csn *is_left_chol (const cs *A, const iss *S)
 {
     if (!CS_CSC (A) || !S) return (NULL) ;
+
+    // printf ("\n \n") ;
+    // cs_print (A, 0) ;
 
     csn *N ;
     cs *L ;
@@ -47,11 +52,20 @@ csn *is_left_chol (const cs *A, const iss *S)
     
     for (k = 0 ; k < n ; k++)
     {
+        printf ("\n--------------------------------------------- \n") ;
+        printf ("--------------------------------------  k = %td \n \n", k) ;
+
         /* a (k:n) = A (k:n,k) */
         for (i = A_colptr [k] ; i < A_colptr [k+1] ; i++)
         {
             a [A_rowind [i]] = Ax [i] ;
         }
+
+        printf ("1) Récupérons les valeurs de Ax dans a : \n \n") ;
+        printf ("a = [ ") ;
+        for (j = 0 ; j < n ; j++)
+            printf ("%f ", a [j]) ;
+        printf ("]\n") ;
 
         /* for j = find (L (k,;)) */
         for (i = L_rowptr [k] ; i < L_rowptr [k+1] ; i++)
@@ -65,8 +79,15 @@ csn *is_left_chol (const cs *A, const iss *S)
             Lpk [j] ++ ;
         }
 
-        /* L (k,k) = sqrt (a (k)) */
+        printf ("\n2) Valeurs de a après substitutions des colonnes à gauche : \n \n") ;
+        printf ("a = [ ") ;
+        for (j = 0 ; j < n ; j++)
+            printf ("%f ", a [j]) ;
+        printf ("]\n") ;
+
+        /* L (k,k) = sqrt (a (k)) */ 
         Lx [ Lp [k]] = lkk = sqrt (a [L_rowind [Lp [k]]]) ;
+        // printf ("lkk = %f \n", lkk) ;
         a [L_rowind [Lp [k]]] = 0.0 ;
         Li [ Lp [k]] = L_rowind [Lp [k]];
 
@@ -77,6 +98,12 @@ csn *is_left_chol (const cs *A, const iss *S)
             a [L_rowind [j]] = 0.0 ;
             Li [j] = L_rowind [j];
         }
+
+        printf ("\n3) Après refresh : \n \n") ;
+        printf ("a = [ ") ;
+        for (j = 0 ; j < n ; j++)
+            printf ("%f ", a [j]) ;
+        printf ("]\n") ;
     }
 
     cs_free (Lpk) ;
