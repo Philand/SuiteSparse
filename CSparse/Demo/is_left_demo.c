@@ -80,7 +80,7 @@ static void print_order (csi order)
 /* -------------------------------------------------------------------------- */
 /* -------------------------------------------------------------------------- */
 
-iss *is_symalloc (cs *A)
+iss *is_symalloc (cs const *A)
 {
     if (!A) return (NULL) ;
     csi n = A->n ;
@@ -88,8 +88,8 @@ iss *is_symalloc (cs *A)
     iss *S = cs_calloc (1, sizeof (iss)) ;
     S->L_colptr = cs_malloc (n+1, sizeof(csi)) ;
     S->L_rowptr = cs_malloc (n+1, sizeof(csi)) ;
-    S->L_rowind = cs_malloc(A_colptr [n], sizeof(csi)) ;
-    S->L_colind = cs_malloc(A_colptr [n], sizeof(csi)) ;
+    S->L_rowind = cs_malloc(3 * A_colptr [n], sizeof(csi)) ;
+    S->L_colind = cs_malloc(3 * A_colptr [n], sizeof(csi)) ;
     S->parent = cs_malloc (n, sizeof(csi)) ;
     return S ;
 }
@@ -158,6 +158,55 @@ problem *free_problem (problem *Prob)
 /* -------------------------------------------------------------------------- */
 /* -------------------------------------------------------------------------- */
 /* -------------------------------------------------------------------------- */
+
+/* C = A(p,p) where A and C are symmetric the upper part stored; pinv not p */
+cs *is_symperm (const cs *A, const csi *pinv, csi values)
+{
+    csi i, j, p, q, i2, j2, n, *Ap, *Ai, *Cp, *Ci, *w ;
+    double *Cx, *Ax ;
+    cs *C ;
+    if (!CS_CSC (A)) return (NULL) ;                    /* check inputs */
+    n = A->n ; Ap = A->p ; Ai = A->i ; Ax = A->x ;
+    C = cs_spalloc (n, n, Ap [n], values && (Ax != NULL), 0) ; /* alloc result*/
+    w = cs_calloc (n, sizeof (csi)) ;                   /* get workspace */
+    if (!C || !w) return (cs_done (C, w, NULL, 0)) ;    /* out of memory */
+    Cp = C->p ; Ci = C->i ; Cx = C->x ;
+
+    for (j = 0 ; j < n ; j++)           /* count entries in each column of C */
+    {
+        j2 = pinv ? pinv [j] : j ;      /* column j of A is column j2 of C */
+        for (p = Ap [j] ; p < Ap [j+1] ; p++)
+        {
+            i = Ai [p] ; 
+            i2 = pinv ? pinv [i] : i ;  /* row i of A is row i2 of C */
+            if (i > j)
+                w [CS_MIN (i2, j2)]++ ; /* column count of C */
+            else
+                w [CS_MAX (i2, j2)]++ ; /* column count of C */
+        }
+    }
+    cs_cumsum (Cp, w, n) ;              /* compute column pointers of C */
+    for (j = 0 ; j < n ; j++)
+    {
+        j2 = pinv ? pinv [j] : j ;      /* column j of A is column j2 of C */
+        for (p = Ap [j] ; p < Ap [j+1] ; p++)
+        {
+            i = Ai [p] ;
+            i2 = pinv ? pinv [i] : i ;  /* row i of A is row i2 of C */
+            if (i > j)
+                Ci [q = w [CS_MIN (i2, j2)]++] = CS_MAX (i2, j2) ;
+            else
+                Ci [q = w [CS_MAX (i2, j2)]++] = CS_MIN (i2, j2) ;
+            if (Cx) Cx [q] = Ax [p] ;
+        }
+    }
+    return (cs_done (C, w, NULL, 1)) ;  /* success; free workspace, return C */
+}
+
+/* -------------------------------------------------------------------------- */
+/* -------------------------------------------------------------------------- */
+/* -------------------------------------------------------------------------- */
+
 
 /* --- is_left_schol.c --- */
 
@@ -285,6 +334,7 @@ iss *is_left_schol (csi order, const cs *A)
         L_colptr [k+1] = L_colptr [k] + nb_nz_col ;
     }
 
+    /*
     printf (" \n --- Vérification de l'indice pointeur des colonnes : --- \n") ;
     for (k = 0 ; k < n + 1 ; k++)
     {
@@ -319,6 +369,7 @@ iss *is_left_schol (csi order, const cs *A)
         printf ("%td  ;  ", parent [k]) ;
     }
     printf ("\n") ;
+    */
 
     cs_free (stack) ;
     cs_free (P) ;
@@ -383,8 +434,8 @@ csn *is_left_chol (const cs *A, const iss *S)
     
     for (k = 0 ; k < n ; k++)
     {
-        printf ("\n--------------------------------------------- \n") ;
-        printf ("--------------------------------------  k = %td \n \n", k) ;
+        /*printf ("\n--------------------------------------------- \n") ;
+        printf ("--------------------------------------  k = %td \n \n", k) ;*/
 
         /* a (k:n) = A (k:n,k) */
         for (i = A_colptr [k] ; i < A_colptr [k+1] ; i++)
@@ -392,11 +443,11 @@ csn *is_left_chol (const cs *A, const iss *S)
             a [A_rowind [i]] = Ax [i] ;
         }
 
-        printf ("1) Récupérons les valeurs de Ax dans a : \n \n") ;
+        /*printf ("1) Récupérons les valeurs de Ax dans a : \n \n") ;
         printf ("a = [ ") ;
-        for (j = 0 ; j < n ; j++)
+        for (j = 0 ; j < n ; j++)    C = make_sym(C) ;
             printf ("%f ", a [j]) ;
-        printf ("]\n") ;
+        printf ("]\n") ;*/
 
         /* for j = find (L (k,;)) */
         for (i = L_rowptr [k] ; i < L_rowptr [k+1] ; i++)
@@ -410,11 +461,11 @@ csn *is_left_chol (const cs *A, const iss *S)
             Lpk [j] ++ ;
         }
 
-        printf ("\n2) Valeurs de a après substitutions des colonnes à gauche : \n \n") ;
+        /*printf ("\n2) Valeurs de a après substitutions des colonnes à gauche : \n \n") ;
         printf ("a = [ ") ;
         for (j = 0 ; j < n ; j++)
             printf ("%f ", a [j]) ;
-        printf ("]\n") ;
+        printf ("]\n") ;*/
 
         /* L (k,k) = sqrt (a (k)) */ 
         Lx [ Lp [k]] = lkk = sqrt (a [L_rowind [Lp [k]]]) ;
@@ -430,11 +481,11 @@ csn *is_left_chol (const cs *A, const iss *S)
             Li [j] = L_rowind [j];
         }
 
-        printf ("\n3) Après refresh : \n \n") ;
+        /*printf ("\n3) Après refresh : \n \n") ;
         printf ("a = [ ") ;
         for (j = 0 ; j < n ; j++)
             printf ("%f ", a [j]) ;
-        printf ("]\n") ;
+        printf ("]\n") ;*/
     }
 
     cs_free (Lpk) ;
@@ -459,10 +510,6 @@ csi *cs_pinv_identity (csi const *p, csi n)
     return (pinv) ;                             /* return result */
 }
 
-/* quicksort sur Ci */
-/* vecteur dense pour stocker les valeurs de Cx */
-/* puis on les stocke dans Cx selon l'ordre d'indices de Ci */
-
 int csiComparator ( const void * first, const void * second)
 {
     csi firstCsi = * (const csi *) first ;
@@ -481,33 +528,21 @@ void is_build_Cx_column (double * Cx, double *a, csi * Ci, csi nb_nz_col)
     }
 }
 
-/* C = A(p,q) where p and q are permutations of 0..m-1 and 0..n-1. */
-cs *is_permute_so (const cs *A, const csi *pinv, csi values)
+cs *order_column (cs *C)
 {
-    csi t, j, k, nz = 0, m, n, *Ap, *Ai, *Cp, *Ci ;
-    double *Cx, *Ax, *a ;
-    cs *C ;
-    if (!CS_CSC (A)) return (NULL) ;    /* check inputs */
-    m = A->m ; n = A->n ; Ap = A->p ; Ai = A->i ; Ax = A->x ;
-    C = cs_spalloc (m, n, Ap [n], values && Ax != NULL, 0) ;  /* alloc result */
-    if (!C) return (cs_done (C, NULL, NULL, 0)) ;   /* out of memory */
+    csi k, j, n, nz, *Cp, *Ci ;
+    double *a, *Cx ;
+    n = C->n ; Cp = C->p ; Ci = C->i ; Cx = C->x ;
     a = cs_malloc (n, sizeof (double)) ;
     for (k = 0 ; k < n ; k++)
-        a [k] = 0.0 ;
-    Cp = C->p ; Ci = C->i ; Cx = C->x ;
-    for (k = 0 ; k < n ; k++)
     {
-        Cp [k] = nz ;
-        j = k ;
-        for (t = Ap [j] ; t < Ap [j+1] ; t++)
-        {
-            a [pinv [Ai [t]]] =  Ax [t] ;
-            Ci [nz++] = pinv ? (pinv [Ai [t]]) : Ai [t] ;
-        }
-        qsort (&Ci [Cp [k]], nz - Cp [k], sizeof (csi), csiComparator) ;
-        is_build_Cx_column (&Cx [Cp [k]], a, &Ci [Cp [k]], nz - Cp [k]) ; 
+        for (j = Cp [k] ; j < Cp [k+1] ; j++)
+            a [Ci [j]] = Cx [j] ;
+        nz = Cp [k+1] - Cp [k] ;
+        qsort (&Ci [Cp [k]], nz, sizeof (csi), csiComparator) ;
+        is_build_Cx_column (&Cx [Cp [k]], a, &Ci [Cp [k]], nz) ; 
     }
-    Cp [n] = nz ;                       /* finalize the last column of C */
+    free (a) ;
     return (cs_done (C, NULL, NULL, 1)) ;
 }
 
@@ -517,33 +552,25 @@ csi is_left_cholsol (csi order, const cs *A, double *b)
     double *x ;
     iss *S ;
     csn *N ;
-    cs *A_perm ;
+    cs *C ;
     csi n, ok, *Perm, *pinv ;
     if (!CS_CSC (A) || !b) return (0) ;     /* check inputs */
     n = A->n ;
+
+    //printf ("\n A : \n") ; cs_print (A, 0) ;
 
     Perm = cs_amd (order, A) ;     /* P = amd(A+A'), or natural */
     pinv = cs_pinv (Perm, n) ;     /* find inverse permutation */
     cs_free (Perm) ;
     if (order && !pinv) return (0) ;
-    if (order == 0)
-        A_perm = cs_permute (A, pinv, NULL, 1) ;
-    else if (order == 1)
-    {
-        A_perm = is_permute_so (A, pinv, 1) ;
-        printf (" MATRIX A : \n") ;
-        cs_print (A, 0) ;
-        printf ("pinv = [ ") ;
-        for (csi k = 0 ; k < n ; k++)
-            printf ("%td ", pinv [k]) ;
-        printf ("]\n") ;
-        printf (" MATRIX A permuted : \n") ;
-        cs_print (A_perm, 0) ;
-    }
 
-    S = is_left_schol (order, A_perm) ;     /* ordering and symbolic analysis */
-    N = is_left_chol (A_perm, S) ;          /* numeric Cholesky factorization */
-    printf ("L:\n") ; cs_print (N->L, 0) ;
+    C = is_symperm (A, pinv, 1) ;
+    C = order_column (C) ;
+
+
+    S = is_left_schol (order, C) ;     /* ordering and symbolic analysis */
+    N = is_left_chol (C, S) ;          /* numeric Cholesky factorization */
+    // printf ("L:\n") ; cs_print (N->L, 0) ;
     x = cs_malloc (n, sizeof (double)) ;    /* get workspace */
     ok = (S && N && x) ;
     if (ok)
@@ -557,7 +584,7 @@ csi is_left_cholsol (csi order, const cs *A, double *b)
     cs_free (pinv) ;
     is_sfree (S) ;
     cs_nfree (N) ;
-    cs_spfree (A_perm) ;
+    cs_spfree (C) ;
     return (ok) ;
 }
 
@@ -568,13 +595,15 @@ csi is_left_cholsol (csi order, const cs *A, double *b)
 csi test1 (problem *Prob)
 {
     cs *A ;
-    csi order, m, ok ;
+    csi order, m, ok, sym ;
     double *b, *x, *resid, t ;
     if (!Prob) return (0) ;
     A = Prob->A ; b = Prob->b ; x = Prob->x ; resid = Prob->resid ;
-    m = A->m ;
+    m = A->m ; sym = Prob->sym ;
 
-    // if (!Prob->sym) return (1) ;
+    if (sym == 1 || sym == -1)
+        A = make_sym (A) ;
+
     for (order = 0 ; order <= 1 ; order++)      /* natural and amd(A+A') */
     {
         if (!order && m > 1000) continue ;
@@ -589,27 +618,11 @@ csi test1 (problem *Prob)
     return (1) ;
 }
 
-/*
-	- ./cs_demo1 < ../Matrix/t1
-	- ./cs_demo2 < ../Matrix/t1
-	- ./cs_demo2 < ../Matrix/ash219
-	- ./cs_demo2 < ../Matrix/bcsstk01
-	- ./cs_demo2 < ../Matrix/fs_183_1
-	- ./cs_demo2 < ../Matrix/mbeacxc
-	- ./cs_demo2 < ../Matrix/west0067
-	- ./cs_demo2 < ../Matrix/lp_afiro
-	- ./cs_demo2 < ../Matrix/bcsstk16
-	- ./cs_demo3 < ../Matrix/bcsstk01
-	- ./cs_demo3 < ../Matrix/bcsstk16
-	- ./is_left_demo < ../Matrix/is_matrix1
-	- ./is_left_demo < ../Matrix/is_matrix2
-	- ./is_left_demo < ../Matrix/is_matrix0
-*/
-
 int main (void)
 {
     problem *Prob = get_problem (stdin, 1e-14) ;
     test1 (Prob) ;
     free_problem (Prob) ;
+    printf ("\n") ;
     return (0) ;
 }
