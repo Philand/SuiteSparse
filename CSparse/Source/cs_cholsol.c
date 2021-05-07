@@ -11,7 +11,7 @@ csi cs_cholsol (csi order, const cs *A, double *b)
     S = cs_schol (order, A) ;               /* ordering and symbolic analysis */
     N = cs_chol (A, S) ;                    /* numeric Cholesky factorization */
     x = cs_malloc (n, sizeof (double)) ;    /* get workspace */
-    //printf ("L:\n") ; cs_print (N->L, 0) ;
+    print_fill_in (A, N) ;
     ok = (S && N && x) ;
     if (ok)
     {

@@ -14,6 +14,21 @@ cs *cs_spalloc (csi m, csi n, csi nzmax, csi values, csi triplet)
     return ((!A->p || !A->i || (values && !A->x)) ? cs_spfree (A) : A) ;
 }
 
+/* allocate a symbolic left-looking Cholesky factorization */
+iss *is_symalloc (cs const *A)
+{
+    if (!A) return (NULL) ;
+    csi n = A->n ;
+    csi *A_colptr = A->p ;
+    iss *S = cs_calloc (1, sizeof (iss)) ;
+    S->L_colptr = cs_malloc (n+1, sizeof(csi)) ;
+    S->L_rowptr = cs_malloc (n+1, sizeof(csi)) ;
+    S->L_rowind = cs_malloc(3 * A_colptr [n], sizeof(csi)) ;
+    S->L_colind = cs_malloc(3 * A_colptr [n], sizeof(csi)) ;
+    S->parent = cs_malloc (n, sizeof(csi)) ;
+    return S ;
+}
+
 /* change the max # of entries sparse matrix */
 csi cs_sprealloc (cs *A, csi nzmax)
 {
@@ -117,4 +132,27 @@ csd *cs_ddone (csd *D, cs *C, void *w, csi ok)
     cs_spfree (C) ;                     /* free temporary matrix */
     cs_free (w) ;                       /* free workspace */
     return (ok ? D : cs_dfree (D)) ;    /* return result if OK, else free it */
+}
+
+/* free a symbolic left-looking Cholesky factorization */
+iss *is_sfree (iss *S)
+{
+    if (!S) return (NULL) ;     /* do nothing if S already NULL */
+    cs_free (S->parent) ;
+    cs_free (S->L_colptr) ;
+    cs_free (S->L_rowind) ;
+    cs_free (S->L_rowptr) ;
+    cs_free (S->L_colind) ;
+    return ((iss *) cs_free (S)) ;  /* free the iss struct and return NULL */
+}
+
+void print_fill_in (cs *C, csn *N)
+{
+    csi n ;
+    double Lnzmax, Cnzmax ;
+    cs *L ;
+    L = N->L ;
+    Lnzmax =  (double)(L->nzmax) ;
+    Cnzmax =  (double)(C->nzmax) ;
+    printf ("  %8.2f %%   |", (Lnzmax / Cnzmax) * 100) ;
 }

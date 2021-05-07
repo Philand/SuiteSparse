@@ -106,6 +106,7 @@ typedef struct cs_dmperm_results    /* cs_dmperm or cs_scc output */
 csn *is_left_chol (const cs *A, const iss *S) ;
 iss *is_left_schol (csi order, const cs *A) ;
 csi is_left_cholsol (csi order, const cs *A, double *b) ;
+iss *is_symalloc (cs const *A) ;
 iss *is_sfree (iss *S) ;
 
 csi *cs_amd (csi order, const cs *A) ;

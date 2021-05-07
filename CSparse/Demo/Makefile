@@ -4,21 +4,14 @@ I = -I../Include
 LDLIBS += -lm
 CS = $(LDFLAGS) ../Lib/libcsparse.a $(LDLIBS)
 
-all: lib cs_demo1 cs_demo2 cs_demo3 is_demo is_demo2 is_demo3 is_left_demo is_up_demo
-	./is_up_demo < ../Matrix/is_matrix0
-	./is_left_demo < ../Matrix/is_matrix0
-	./is_up_demo < ../Matrix/is_matrix1
-	./is_left_demo < ../Matrix/is_matrix1
-	./is_up_demo < ../Matrix/is_matrix2
-	./is_left_demo < ../Matrix/is_matrix2
-	./is_up_demo < ../Matrix/is_matrix3
-	./is_left_demo < ../Matrix/is_matrix3
-	./is_up_demo < ../Matrix/is_matrix3_real
-	./is_left_demo < ../Matrix/is_matrix3_real
-	./is_up_demo < ../Matrix/bcsstk01
-	./is_left_demo < ../Matrix/bcsstk01
-	./is_up_demo < ../Matrix/bcsstk16
-	./is_left_demo < ../Matrix/bcsstk16
+all: lib cs_demo1 cs_demo2 cs_demo3 is_demo is_demo2 is_demo3 is_left_demo is_up_demo is_cholesky_demo
+	./is_cholesky_demo < ../Matrix/is_matrix0
+	./is_cholesky_demo < ../Matrix/is_matrix1
+	./is_cholesky_demo < ../Matrix/is_matrix2
+	./is_cholesky_demo < ../Matrix/is_matrix3
+	./is_cholesky_demo < ../Matrix/is_matrix3_real
+	./is_cholesky_demo < ../Matrix/bcsstk01
+	./is_cholesky_demo < ../Matrix/bcsstk16
 
 
 lib:
@@ -48,10 +41,13 @@ is_left_demo: lib is_left_demo.c Makefile
 is_up_demo: lib is_up_demo.c Makefile
 	$(CC) $(CF) $(I) -o is_up_demo is_up_demo.c $(CS)
 
+is_cholesky_demo: lib is_cholesky_demo.c Makefile
+	$(CC) $(CF) $(I) -o is_cholesky_demo is_cholesky_demo.c $(CS)
+
 clean:
 	- $(RM) *.o
 
 purge: distclean
 
 distclean: clean
-	- $(RM) -r cs_demo1 cs_demo2 cs_demo3 is_demo1 is_demo2 is_demo3 is_left_demo is_up_demo *.a *.dSYM *.obj *.dll
+	- $(RM) -r cs_demo1 cs_demo2 cs_demo3 is_demo1 is_demo2 is_demo3 is_left_demo is_up_demo is_cholesky_demo *.a *.dSYM *.obj *.dll

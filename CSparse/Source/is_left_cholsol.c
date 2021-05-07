@@ -50,16 +50,6 @@ cs *is_symperm (const cs *A, const csi *pinv, csi values)
     return (cs_done (C, w, NULL, 1)) ;  /* success; free workspace, return C */
 }
 
-csi *cs_pinv_identity (csi const *p, csi n)
-{
-    csi k, *pinv ;
-    if (!p) return (NULL) ;                     /* p = NULL denotes identity */
-    pinv = cs_malloc (n, sizeof (csi)) ;        /* allocate result */
-    if (!pinv) return (NULL) ;                  /* out of memory */
-    for (k = 0 ; k < n ; k++) pinv [k] = k ;    /* invert the permutation */
-    return (pinv) ;                             /* return result */
-}
-
 int csiComparator ( const void * first, const void * second)
 {
     csi firstCsi = * (const csi *) first ;
@@ -117,11 +107,12 @@ csi is_left_cholsol (csi order, const cs *A, double *b)
     if (order && !pinv) return (0) ;
 
     C = is_symperm (A, pinv, 1) ;
-    C = order_column (C) ;
+    //C = order_column (C) ;
 
     S = is_left_schol (order, C) ;     /* ordering and symbolic analysis */
     N = is_left_chol (C, S) ;          /* numeric Cholesky factorization */
     x = cs_malloc (n, sizeof (double)) ;    /* get workspace */
+    print_fill_in (C, N) ;
     ok = (S && N && x) ;
     if (ok)
     {

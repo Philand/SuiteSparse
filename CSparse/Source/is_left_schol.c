@@ -126,6 +126,7 @@ iss *is_left_schol (csi order, const cs *A)
         L_colptr [k+1] = L_colptr [k] + nb_nz_col ;
     }
 
+    /*
     printf (" \n --- Vérification de l'indice pointeur des colonnes : --- \n") ;
     for (k = 0 ; k < n + 1 ; k++)
     {
@@ -160,6 +161,7 @@ iss *is_left_schol (csi order, const cs *A)
         printf ("%td  ;  ", parent [k]) ;
     }
     printf ("\n") ;
+    */
 
     cs_free (stack) ;
     cs_free (P) ;
