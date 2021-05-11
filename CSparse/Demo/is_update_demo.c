@@ -126,11 +126,104 @@ problem *free_problem (problem *Prob)
 }
 
 /* -------------------------------------------------------------------------- */
-/* ------------------------------- CHOLESKY DEMO ---------------------------- */
+/* ------------------------------- UPDATE DEMO ------------------------------ */
 /* -------------------------------------------------------------------------- */
 
-/* solve a linear system using Cholesky (up-looking and left-looking) */
-csi cholesky_demo (problem *Prob)
+csi *is_pre_update (csi *A_col_modified, csi n , const iss *S)
+{
+    // I_0 = A_col_modified | I_1 = L_col_modified
+    csi k, i ;
+    csi *parent, *L_col_modified ;
+    parent = S->parent ;
+    L_col_modified = cs_malloc (n, sizeof(csi)) ;
+    for (k = 0 ; k < n ; k++)
+        L_col_modified [k] = 0 ;
+
+    // faire directement une boucle sur le tableau.
+
+    for (k = 0 ; k < n ; k++)
+    {
+        if (A_col_modified [k] == 1)
+        {
+            L_col_modified [k] = 1 ;
+            for (i = parent [k] ; i != -1 ; i = parent [i])
+                L_col_modified [i] = 1 ;
+        }
+    }
+    return L_col_modified ;
+}
+
+csn *is_left_cholupdate (const cs *A, const iss *S, csn *N, csi *L_col_modified)
+{
+    cs *L ;
+    csi k, n, i, j ;
+    csi *A_colptr, *A_rowind, *Lp, *Li, *L_rowptr, *L_colind, *Lpk ;
+    double lkj, lkk ;
+    double *Ax, *a, *Lx ;
+
+    n = A->n ;
+    L = N->L ;
+    Lp = L->p ; Li = L->i ; Lx = L->x ;
+
+    L_colind = S->L_colind ;
+    L_rowptr =  S->L_rowptr ;
+    a = cs_malloc(n, sizeof (double)) ;                 /* get csi workspace */
+    Ax = A->x ;
+    A_colptr = A->p ;
+    A_rowind = A->i ;
+    Lpk = cs_malloc(n, sizeof (csi)) ;             
+
+    for (k = 0 ; k < n ; k++)
+    {
+        if (Lp [k+1] - Lp [k] > 1)
+            Lpk [k] = Lp [k] + 1 ;
+        else
+            Lpk [k] = -1 ;
+    }
+
+    for (k = 0 ; k < n ; k++)
+    {
+        if (L_col_modified [k] == 1)
+        {
+            /* a (k:n) = A (k:n,k) */
+            for (i = A_colptr [k] ; i < A_colptr [k+1] ; i++)
+            {
+               a [A_rowind [i]] = Ax [i] ;
+            }
+
+            /* for j = find (L (k,;)) */
+            for (i = L_rowptr [k] ; i < L_rowptr [k+1] ; i++)
+            {
+                j = L_colind [i] ;
+                lkj = Lx [Lpk [j]] ;
+              
+                for (int p = Lpk [j] ; p < Lp [j+1] ; p++)
+                    a [Li[p]] -= Lx [p]*lkj;
+              
+                Lpk [j] ++ ;
+            }
+
+            /* L (k,k) = sqrt (a (k)) */ 
+            Lx [ Lp [k]] = lkk = sqrt (a [Li [Lp [k]]]) ;
+            a [Li [Lp [k]]] = 0.0 ;
+
+            /* L (k+1:n,k) = a (k+1:n) / L (k,k) */
+            for (j = Lp [k] + 1 ; j < Lp [k+1] ; j++)
+            {
+                Lx [j] = a [Li [j]] / lkk ;
+                a [Li [j]] = 0.0 ;
+            }
+        }
+    }
+
+    cs_free (Lpk) ;
+    cs_free (a) ;
+
+    return N ;
+}
+
+/* solve a linear system using Cholesky and after update factorization */
+csi update_demo (problem *Prob)
 {
     cs *A, *C ;
     double *b, *x, *resid,  t, tol ;
@@ -151,37 +244,69 @@ csi cholesky_demo (problem *Prob)
         (double) nb, (double) ns, (double) sprank) ;
     cs_dfree (D) ;
 
-    printf ("------------------------------------------------------------------------------------- \n") ;
-    printf ("      algorithm       |    permutation   |    fill-in    |    time    |    residue    \n") ;
-    printf ("----------------------|------------------|---------------|------------|-------------- \n") ;
-
-    /* Cholesky up-looking */
-    for (order = 0 ; order <= 1 ; order++)      /* natural and amd(A+A') */
-    {
-        if (!order && m > 1000) continue ;
-        printf ("cholesky up-looking   |     ") ;
-        print_order (order) ; printf ("  |") ;
-        rhs (x, b, m) ;                         /* compute right-hand side */
-        t = tic () ;
-        ok = cs_cholsol (order, C, x) ;         /* solve Ax=b with Cholesky */
-        printf ("%8.2f s  | ", toc (t)) ;
-        print_resid (ok, C, x, b, resid) ;      /* print residual */
-    }
-
     /* Cholesky left-looking */
     if (sym == 1 || sym == -1)
         A = make_sym (A) ;
 
-    for (order = 0 ; order <= 1 ; order++)      /* natural and amd(A+A') */
+    for (order = 0 ; order <= 0 ; order++)      /* natural and amd(A+A') */
     {
+        /* --------------------------------------------------------- */
+        /* update of A --> A' (test for is_matrix_1 / is_matrix1_up) */
+        /* --------------------------------------------------------- */
+
         if (!order && m > 1000) continue ;
-        printf ("cholesky left-looking |     ") ;
-        print_order (order) ; printf ("  |") ;
-        rhs (x, b, m) ;                         /* compute right-hand side */
-        t = tic () ;
-        ok = is_left_cholsol (order, A, x) ;    /* solve Ax=b with Cholesky */
-        printf ("%8.2f s  | ", toc (t)) ;
-        print_resid (ok, A, x, b, resid) ;      /* print residual */
+        printf ("cholesky left-looking update ") ;
+
+        double *x ;
+        iss *S ;
+        csn *N ;
+        cs *C ;
+        csi *Perm, *pinv ;
+        if (!CS_CSC (A) || !b) return (0) ;     /* check inputs */
+        n = A->n ;
+
+        Perm = cs_amd (order, A) ;     /* P = amd(A+A'), or natural */
+        pinv = cs_pinv (Perm, n) ;     /* find inverse permutation */
+        cs_free (Perm) ;
+        if (order && !pinv) return (0) ;
+
+        C = is_symperm (A, pinv, 1) ;
+
+        S = is_left_schol (order, C) ;     /* ordering and symbolic analysis */
+        N = is_left_chol (C, S) ;          /* numeric Cholesky factorization */
+        x = cs_malloc (n, sizeof (double)) ;    /* get workspace */
+        printf ("L :\n") ; cs_print (N->L, 0) ;
+
+        A->x [13] = 8 ; A->x [14] = 2 ; A->x [20] = 8 ; A->x [24] = 2 ;
+        csi *A_col_modified, *L_col_modified ;
+        A_col_modified = cs_malloc (n, sizeof (csi)) ;
+        for (k = 0 ; k < n ; k++)
+            A_col_modified [k] = 0 ;
+        A_col_modified [4] = 1 ;
+
+        /*printf ("A_col_modified = [") ;
+        for (k = 0 ; k < n ; k++)
+            printf ("%td ", A_col_modified [k]) ;
+        printf ("]\n") ;*/
+
+        L_col_modified = is_pre_update (A_col_modified, n , S) ;
+        /*printf ("L_col_modified = [") ;
+        for (k = 0 ; k < n ; k++)
+            printf ("%td ", L_col_modified [k]) ;
+        printf ("]\n") ;*/
+
+        N = is_left_cholupdate (A, S, N, L_col_modified) ;
+
+        printf ("L_updated :\n") ; cs_print (N->L, 0) ;
+
+        cs_free (x) ;
+        cs_free (pinv) ;
+        is_sfree (S) ;
+        cs_nfree (N) ;
+        cs_spfree (C) ;
+        cs_free(A_col_modified) ;
+        cs_free(L_col_modified) ;
+
     }
     printf ("------------------------------------------------------------------------------------- \n") ;
     return (1) ;
@@ -194,7 +319,7 @@ csi cholesky_demo (problem *Prob)
 int main (void)
 {
     problem *Prob = get_problem (stdin, 0) ;
-    cholesky_demo (Prob) ;
+    update_demo (Prob) ;
     free_problem (Prob) ;
     printf ("\n") ;
     return (0) ;

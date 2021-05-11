@@ -108,6 +108,10 @@ iss *is_left_schol (csi order, const cs *A) ;
 csi is_left_cholsol (csi order, const cs *A, double *b) ;
 iss *is_symalloc (cs const *A) ;
 iss *is_sfree (iss *S) ;
+void print_fill_in (cs *C, csn *N);
+csi *is_pre_update (csi *A_col_modified, csi n , const iss *S) ;
+csn *is_left_cholupdate (const cs *A, const iss *S, csn *N, csi *L_col_modified) ;
+cs *is_symperm (const cs *A, const csi *pinv, csi values) ;
 
 csi *cs_amd (csi order, const cs *A) ;
 csn *cs_chol (const cs *A, const css *S) ;
