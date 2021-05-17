@@ -129,34 +129,36 @@ problem *free_problem (problem *Prob)
 /* ------------------------------- UPDATE DEMO ------------------------------ */
 /* -------------------------------------------------------------------------- */
 
-csi *is_pre_update (csi *A_col_modified, csi n , const iss *S)
+csi *is_pre_update (csi *I0, csi I0_size, csi *I1, csi *I1_size, const iss *S)
 {
-    // I_0 = A_col_modified | I_1 = L_col_modified
-    csi k, i ;
-    csi *parent, *L_col_modified ;
+    csi k, i, j, count, I1_max_size, ok ;
+    csi *parent ;
     parent = S->parent ;
-    L_col_modified = cs_malloc (n, sizeof(csi)) ;
-    for (k = 0 ; k < n ; k++)
-        L_col_modified [k] = 0 ;
+    I1_max_size = I0_size ;
+    ok = 1 ;
 
-    // faire directement une boucle sur le tableau.
-
-    for (k = 0 ; k < n ; k++)
+    i = count = 0 ;
+    for (k = I0 [i] ; i < I0_size ; k = I0 [i++] )
     {
-        if (A_col_modified [k] == 1)
+        for (j = k ; j != -1 ; j = parent [j])
         {
-            L_col_modified [k] = 1 ;
-            for (i = parent [k] ; i != -1 ; i = parent [i])
-                L_col_modified [i] = 1 ;
+            I1 [count++] = j ;
+            if (count == I1_max_size)
+            {
+                I1_max_size *= 2 ;
+                I1 = realloc (I1, I1_max_size * sizeof (csi)) ;
+            }
         }
     }
-    return L_col_modified ;
+    *I1_size = count ;
+
+    return I1 ;
 }
 
-csn *is_left_cholupdate (const cs *A, const iss *S, csn *N, csi *L_col_modified)
+csn *is_left_cholupdate (const cs *A, const iss *S, csn *N, csi *I1, csi I1_size)
 {
     cs *L ;
-    csi k, n, i, j ;
+    csi k, n, i, j, o ;
     csi *A_colptr, *A_rowind, *Lp, *Li, *L_rowptr, *L_colind, *Lpk ;
     double lkj, lkk ;
     double *Ax, *a, *Lx ;
@@ -164,6 +166,7 @@ csn *is_left_cholupdate (const cs *A, const iss *S, csn *N, csi *L_col_modified)
     n = A->n ;
     L = N->L ;
     Lp = L->p ; Li = L->i ; Lx = L->x ;
+    o = 0 ;
 
     L_colind = S->L_colind ;
     L_rowptr =  S->L_rowptr ;
@@ -181,38 +184,36 @@ csn *is_left_cholupdate (const cs *A, const iss *S, csn *N, csi *L_col_modified)
             Lpk [k] = -1 ;
     }
 
-    for (k = 0 ; k < n ; k++)
+    for (k = I1 [o] ; o < I1_size ; k = I1 [++o] )
     {
-        if (L_col_modified [k] == 1)
+        printf ("====== k = %td \n", k) ;
+        /* a (k:n) = A (k:n,k) */
+        for (i = A_colptr [k] ; i < A_colptr [k+1] ; i++)
         {
-            /* a (k:n) = A (k:n,k) */
-            for (i = A_colptr [k] ; i < A_colptr [k+1] ; i++)
-            {
-               a [A_rowind [i]] = Ax [i] ;
-            }
+            a [A_rowind [i]] = Ax [i] ;
+        }
 
-            /* for j = find (L (k,;)) */
-            for (i = L_rowptr [k] ; i < L_rowptr [k+1] ; i++)
-            {
-                j = L_colind [i] ;
-                lkj = Lx [Lpk [j]] ;
+        /* for j = find (L (k,;)) */
+        for (i = L_rowptr [k] ; i < L_rowptr [k+1] ; i++)
+        {
+            j = L_colind [i] ;
+            lkj = Lx [Lpk [j]] ;
               
-                for (int p = Lpk [j] ; p < Lp [j+1] ; p++)
-                    a [Li[p]] -= Lx [p]*lkj;
+            for (int p = Lpk [j] ; p < Lp [j+1] ; p++)
+                a [Li[p]] -= Lx [p]*lkj;
               
-                Lpk [j] ++ ;
-            }
+            Lpk [j] ++ ;
+        }
 
-            /* L (k,k) = sqrt (a (k)) */ 
-            Lx [ Lp [k]] = lkk = sqrt (a [Li [Lp [k]]]) ;
-            a [Li [Lp [k]]] = 0.0 ;
+        /* L (k,k) = sqrt (a (k)) */ 
+        Lx [ Lp [k]] = lkk = sqrt (a [Li [Lp [k]]]) ;
+        a [Li [Lp [k]]] = 0.0 ;
 
-            /* L (k+1:n,k) = a (k+1:n) / L (k,k) */
-            for (j = Lp [k] + 1 ; j < Lp [k+1] ; j++)
-            {
-                Lx [j] = a [Li [j]] / lkk ;
-                a [Li [j]] = 0.0 ;
-            }
+        /* L (k+1:n,k) = a (k+1:n) / L (k,k) */
+        for (j = Lp [k] + 1 ; j < Lp [k+1] ; j++)
+        {
+            Lx [j] = a [Li [j]] / lkk ;
+            a [Li [j]] = 0.0 ;
         }
     }
 
@@ -277,25 +278,38 @@ csi update_demo (problem *Prob)
         x = cs_malloc (n, sizeof (double)) ;    /* get workspace */
         printf ("L :\n") ; cs_print (N->L, 0) ;
 
+        /* Amélioration :
+            - On considère que l'on connaît le nombre de colonnes que l'on change.
+            Donc, l'allocation dynamique de I0 est facile. On alloue le nombre de
+            colonnes de A qui ont changées selon le choix de l'utilisateur.
+            - On va faire passer I0 ET I1 en paramètres de is_pre_update.
+            La fonction renverra le nombre d'éléments dans I1. Elle modifiera 
+            en interne les valeurs à contenir dans I1 et fera des réallocations
+            si nécessaire.
+            - Ensuite, améliorer la boucle principale de is_left_cholupdate
+        */
+
         A->x [13] = 8 ; A->x [14] = 2 ; A->x [20] = 8 ; A->x [24] = 2 ;
-        csi *A_col_modified, *L_col_modified ;
-        A_col_modified = cs_malloc (n, sizeof (csi)) ;
-        for (k = 0 ; k < n ; k++)
-            A_col_modified [k] = 0 ;
-        A_col_modified [4] = 1 ;
+        csi *I0, *I1 ;
+        csi I0_size, I1_size ;
+        I0_size = I1_size = 1 ;
+        I0 = cs_malloc (I0_size, sizeof (csi)) ;
+        I0 [0] = 4 ;
+        I1 = cs_malloc (I1_size, sizeof (csi)) ;
 
-        /*printf ("A_col_modified = [") ;
-        for (k = 0 ; k < n ; k++)
-            printf ("%td ", A_col_modified [k]) ;
-        printf ("]\n") ;*/
+        printf ("I0 = [") ;
+        for (k = 0 ; k < I0_size ; k++)
+            printf ("%td ", I0 [k]) ;
+        printf ("]\n") ;
 
-        L_col_modified = is_pre_update (A_col_modified, n , S) ;
-        /*printf ("L_col_modified = [") ;
-        for (k = 0 ; k < n ; k++)
-            printf ("%td ", L_col_modified [k]) ;
-        printf ("]\n") ;*/
+        I1 = is_pre_update (I0, I0_size, I1, &I1_size, S) ;
 
-        N = is_left_cholupdate (A, S, N, L_col_modified) ;
+        printf ("I1 = [") ;
+        for (k = 0 ; k < I1_size ; k++)
+            printf ("%td ", I1 [k]) ;
+        printf ("]\n") ;
+
+        N = is_left_cholupdate (A, S, N, I1, I1_size) ;
 
         printf ("L_updated :\n") ; cs_print (N->L, 0) ;
 
@@ -304,8 +318,8 @@ csi update_demo (problem *Prob)
         is_sfree (S) ;
         cs_nfree (N) ;
         cs_spfree (C) ;
-        cs_free(A_col_modified) ;
-        cs_free(L_col_modified) ;
+        cs_free(I0) ;
+        cs_free(I1) ;
 
     }
     printf ("------------------------------------------------------------------------------------- \n") ;
