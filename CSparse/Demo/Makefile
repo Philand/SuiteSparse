@@ -12,8 +12,8 @@ all: lib cs_demo1 cs_demo2 cs_demo3 is_demo is_demo2 is_demo3 is_left_demo is_up
 	./is_cholesky_demo < ../Matrix/bcsstk01
 	./is_cholesky_demo < ../Matrix/bcsstk16
 	./is_cholesky_demo < ../Matrix/is_matrix1
-	./is_cholesky_demo < ../Matrix/is_matrix1_up
-	./is_update_demo < ../Matrix/is_matrix1
+	./is_update_demo ../Update/update1_is_matrix1 < ../Matrix/is_matrix1
+	./is_update_demo ../Update/update1_is_matrix2 < ../Matrix/is_matrix2
 
 
 lib:

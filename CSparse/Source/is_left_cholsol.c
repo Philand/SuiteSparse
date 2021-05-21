@@ -69,6 +69,7 @@ csi is_left_cholsol (csi order, const cs *A, double *b)
     N = is_left_chol (C, S) ;          /* numeric Cholesky factorization */
     x = cs_malloc (n, sizeof (double)) ;    /* get workspace */
     print_fill_in (C, N) ;
+    //printf ("L = \n") ; cs_print (N->L, 0) ;
     ok = (S && N && x) ;
     if (ok)
     {

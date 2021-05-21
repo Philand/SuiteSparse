@@ -129,102 +129,8 @@ problem *free_problem (problem *Prob)
 /* ------------------------------- UPDATE DEMO ------------------------------ */
 /* -------------------------------------------------------------------------- */
 
-csi *is_pre_update (csi *I0, csi I0_size, csi *I1, csi *I1_size, const iss *S)
-{
-    csi k, i, j, count, I1_max_size, ok ;
-    csi *parent ;
-    parent = S->parent ;
-    I1_max_size = I0_size ;
-    ok = 1 ;
-
-    i = count = 0 ;
-    for (k = I0 [i] ; i < I0_size ; k = I0 [i++] )
-    {
-        for (j = k ; j != -1 ; j = parent [j])
-        {
-            I1 [count++] = j ;
-            if (count == I1_max_size)
-            {
-                I1_max_size *= 2 ;
-                I1 = realloc (I1, I1_max_size * sizeof (csi)) ;
-            }
-        }
-    }
-    *I1_size = count ;
-
-    return I1 ;
-}
-
-csn *is_left_cholupdate (const cs *A, const iss *S, csn *N, csi *I1, csi I1_size)
-{
-    cs *L ;
-    csi k, n, i, j, o ;
-    csi *A_colptr, *A_rowind, *Lp, *Li, *L_rowptr, *L_colind, *Lpk ;
-    double lkj, lkk ;
-    double *Ax, *a, *Lx ;
-
-    n = A->n ;
-    L = N->L ;
-    Lp = L->p ; Li = L->i ; Lx = L->x ;
-    o = 0 ;
-
-    L_colind = S->L_colind ;
-    L_rowptr =  S->L_rowptr ;
-    a = cs_malloc(n, sizeof (double)) ;                 /* get csi workspace */
-    Ax = A->x ;
-    A_colptr = A->p ;
-    A_rowind = A->i ;
-    Lpk = cs_malloc(n, sizeof (csi)) ;             
-
-    for (k = 0 ; k < n ; k++)
-    {
-        if (Lp [k+1] - Lp [k] > 1)
-            Lpk [k] = Lp [k] + 1 ;
-        else
-            Lpk [k] = -1 ;
-    }
-
-    for (k = I1 [o] ; o < I1_size ; k = I1 [++o] )
-    {
-        printf ("====== k = %td \n", k) ;
-        /* a (k:n) = A (k:n,k) */
-        for (i = A_colptr [k] ; i < A_colptr [k+1] ; i++)
-        {
-            a [A_rowind [i]] = Ax [i] ;
-        }
-
-        /* for j = find (L (k,;)) */
-        for (i = L_rowptr [k] ; i < L_rowptr [k+1] ; i++)
-        {
-            j = L_colind [i] ;
-            lkj = Lx [Lpk [j]] ;
-              
-            for (int p = Lpk [j] ; p < Lp [j+1] ; p++)
-                a [Li[p]] -= Lx [p]*lkj;
-              
-            Lpk [j] ++ ;
-        }
-
-        /* L (k,k) = sqrt (a (k)) */ 
-        Lx [ Lp [k]] = lkk = sqrt (a [Li [Lp [k]]]) ;
-        a [Li [Lp [k]]] = 0.0 ;
-
-        /* L (k+1:n,k) = a (k+1:n) / L (k,k) */
-        for (j = Lp [k] + 1 ; j < Lp [k+1] ; j++)
-        {
-            Lx [j] = a [Li [j]] / lkk ;
-            a [Li [j]] = 0.0 ;
-        }
-    }
-
-    cs_free (Lpk) ;
-    cs_free (a) ;
-
-    return N ;
-}
-
 /* solve a linear system using Cholesky and after update factorization */
-csi update_demo (problem *Prob)
+csi update_demo (problem *Prob, FILE * filePtr)
 {
     cs *A, *C ;
     double *b, *x, *resid,  t, tol ;
@@ -253,7 +159,7 @@ csi update_demo (problem *Prob)
     {
         /* --------------------------------------------------------- */
         /* update of A --> A' (test for is_matrix_1 / is_matrix1_up) */
-        /* --------------------------------------------------------- */
+        /* --------------------------------------------------------- */ 
 
         if (!order && m > 1000) continue ;
         printf ("cholesky left-looking update ") ;
@@ -266,7 +172,7 @@ csi update_demo (problem *Prob)
         if (!CS_CSC (A) || !b) return (0) ;     /* check inputs */
         n = A->n ;
 
-        Perm = cs_amd (order, A) ;     /* P = amd(A+A'), or natural */
+        Perm = cs_amd (order, A) ;     /* P = amd(A+A') or natural */
         pinv = cs_pinv (Perm, n) ;     /* find inverse permutation */
         cs_free (Perm) ;
         if (order && !pinv) return (0) ;
@@ -278,36 +184,35 @@ csi update_demo (problem *Prob)
         x = cs_malloc (n, sizeof (double)) ;    /* get workspace */
         printf ("L :\n") ; cs_print (N->L, 0) ;
 
-        /* Amélioration :
-            - On considère que l'on connaît le nombre de colonnes que l'on change.
-            Donc, l'allocation dynamique de I0 est facile. On alloue le nombre de
-            colonnes de A qui ont changées selon le choix de l'utilisateur.
-            - On va faire passer I0 ET I1 en paramètres de is_pre_update.
-            La fonction renverra le nombre d'éléments dans I1. Elle modifiera 
-            en interne les valeurs à contenir dans I1 et fera des réallocations
-            si nécessaire.
-            - Ensuite, améliorer la boucle principale de is_left_cholupdate
-        */
+        printf ("arbre d'élimination = [ ") ;
+        for (k = 0 ; k < n ; k++)
+            printf ("%td ", S->parent [k]) ;
+        printf ("]\n") ;
 
-        A->x [13] = 8 ; A->x [14] = 2 ; A->x [20] = 8 ; A->x [24] = 2 ;
         csi *I0, *I1 ;
         csi I0_size, I1_size ;
-        I0_size = I1_size = 1 ;
-        I0 = cs_malloc (I0_size, sizeof (csi)) ;
-        I0 [0] = 4 ;
-        I1 = cs_malloc (I1_size, sizeof (csi)) ;
+
+        I0_size = I1_size = 0 ;
+
+        I0 = cs_malloc (2, sizeof (csi)) ;
+        I0 = is_load_update_matrix (filePtr, A, I0, &I0_size) ;
+
+        // printf ("A : \n") ; cs_print (A, 0) ;
 
         printf ("I0 = [") ;
         for (k = 0 ; k < I0_size ; k++)
             printf ("%td ", I0 [k]) ;
         printf ("]\n") ;
+        
 
+        I1 = cs_malloc (I0_size, sizeof (csi)) ;
         I1 = is_pre_update (I0, I0_size, I1, &I1_size, S) ;
-
+        
         printf ("I1 = [") ;
         for (k = 0 ; k < I1_size ; k++)
             printf ("%td ", I1 [k]) ;
         printf ("]\n") ;
+        
 
         N = is_left_cholupdate (A, S, N, I1, I1_size) ;
 
@@ -318,9 +223,8 @@ csi update_demo (problem *Prob)
         is_sfree (S) ;
         cs_nfree (N) ;
         cs_spfree (C) ;
-        cs_free(I0) ;
-        cs_free(I1) ;
-
+        cs_free (I0) ;
+        cs_free (I1) ;
     }
     printf ("------------------------------------------------------------------------------------- \n") ;
     return (1) ;
@@ -330,11 +234,27 @@ csi update_demo (problem *Prob)
 /* ---------------------------------- MAIN ---------------------------------- */
 /* -------------------------------------------------------------------------- */
 
-int main (void)
+int main (int argc, char *argv[])
 {
-    problem *Prob = get_problem (stdin, 0) ;
-    update_demo (Prob) ;
-    free_problem (Prob) ;
-    printf ("\n") ;
-    return (0) ;
+    if (argc < 2 || argc > 3)
+    {
+        fprintf ( stderr , " usage : ./is_update_demo vec_upt < matrix\n") ;
+        exit (1) ;
+    }
+    else
+    {
+        char * fileName = NULL ;
+        FILE * filePtr = NULL ;
+
+        fileName = argv [1] ;
+        filePtr = fopen (fileName, "r") ;
+
+        problem *Prob = get_problem (stdin, 0) ;
+        update_demo (Prob, filePtr) ;
+
+        fclose (filePtr) ;
+        free_problem (Prob) ;
+        printf ("\n") ;
+        return (0) ;
+    }
 }

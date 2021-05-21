@@ -109,9 +109,14 @@ csi is_left_cholsol (csi order, const cs *A, double *b) ;
 iss *is_symalloc (cs const *A) ;
 iss *is_sfree (iss *S) ;
 void print_fill_in (cs *C, csn *N) ;
+csi is_unique (csi *vec, csi i, csi *size) ;
+csi is_add_entry (csi *vec, csi i, csi *size, csi *max_size) ;
+csi *is_load_update_matrix (FILE *f, cs *A, csi *I0, csi *I0_size) ;
 csi *is_pre_update (csi *I0, csi I0_size, csi *I1, csi *I1_size, const iss *S) ;
 csn *is_left_cholupdate (const cs *A, const iss *S, csn *N, csi *I1, csi I1_size) ;
 cs *is_symperm (const cs *A, const csi *pinv, csi values) ;
+csi is_ind_in_set (csi i, csi *set, csi set_size) ;
+csi is_maj_Lpk (csi Lp_j, csi Lp_j1, csi *Li, csi *I1, csi I1_size) ;
 
 csi *cs_amd (csi order, const cs *A) ;
 csn *cs_chol (const cs *A, const css *S) ;
