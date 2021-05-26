@@ -151,82 +151,42 @@ csi update_demo (problem *Prob, FILE * filePtr)
         (double) nb, (double) ns, (double) sprank) ;
     cs_dfree (D) ;
 
-    /* Cholesky left-looking */
     if (sym == 1 || sym == -1)
         A = make_sym (A) ;
 
-    for (order = 0 ; order <= 0 ; order++)      /* natural and amd(A+A') */
+    printf ("--------------------------------------------------------------------------------------------- \n") ;
+    printf ("          algorithm           |    permutation   |    fill-in    |    time    |    residue    \n") ;
+    printf ("------------------------------|------------------|---------------|------------|-------------- \n") ;
+
+    /* ------------------------------------------------------------ */
+
+    /* Updated Cholesky left-looking factorisation */
+    for (order = 0 ; order <= 1 ; order++)      /* natural and amd(A+A') */
     {
-        /* --------------------------------------------------------- */
-        /* update of A --> A' (test for is_matrix_1 / is_matrix1_up) */
-        /* --------------------------------------------------------- */ 
-
         if (!order && m > 1000) continue ;
-        printf ("cholesky left-looking update ") ;
-
-        double *x ;
-        iss *S ;
-        csn *N ;
-        cs *C ;
-        csi *Perm, *pinv ;
-        if (!CS_CSC (A) || !b) return (0) ;     /* check inputs */
-        n = A->n ;
-
-        Perm = cs_amd (order, A) ;     /* P = amd(A+A') or natural */
-        pinv = cs_pinv (Perm, n) ;     /* find inverse permutation */
-        cs_free (Perm) ;
-        if (order && !pinv) return (0) ;
-
-        C = is_symperm (A, pinv, 1) ;
-
-        S = is_left_schol (order, C) ;     /* ordering and symbolic analysis */
-        N = is_left_chol (C, S) ;          /* numeric Cholesky factorization */
-        x = cs_malloc (n, sizeof (double)) ;    /* get workspace */
-        printf ("L :\n") ; cs_print (N->L, 0) ;
-
-        printf ("arbre d'élimination = [ ") ;
-        for (k = 0 ; k < n ; k++)
-            printf ("%td ", S->parent [k]) ;
-        printf ("]\n") ;
-
-        csi *I0, *I1 ;
-        csi I0_size, I1_size ;
-
-        I0_size = I1_size = 0 ;
-
-        I0 = cs_malloc (2, sizeof (csi)) ;
-        I0 = is_load_update_matrix (filePtr, A, I0, &I0_size) ;
-
-        // printf ("A : \n") ; cs_print (A, 0) ;
-
-        printf ("I0 = [") ;
-        for (k = 0 ; k < I0_size ; k++)
-            printf ("%td ", I0 [k]) ;
-        printf ("]\n") ;
-        
-
-        I1 = cs_malloc (I0_size, sizeof (csi)) ;
-        I1 = is_pre_update (I0, I0_size, I1, &I1_size, S) ;
-        
-        printf ("I1 = [") ;
-        for (k = 0 ; k < I1_size ; k++)
-            printf ("%td ", I1 [k]) ;
-        printf ("]\n") ;
-        
-
-        N = is_left_cholupdate (A, S, N, I1, I1_size) ;
-
-        printf ("L_updated :\n") ; cs_print (N->L, 0) ;
-
-        cs_free (x) ;
-        cs_free (pinv) ;
-        is_sfree (S) ;
-        cs_nfree (N) ;
-        cs_spfree (C) ;
-        cs_free (I0) ;
-        cs_free (I1) ;
+        printf ("partial cholesky left-looking |     ") ;
+        print_order (order) ; printf ("  |") ;
+        rhs (x, b, m) ;                         /* compute right-hand side */
+        t = tic () ;
+        ok = is_left_cholsol_update (order, A, x, filePtr) ;    /* solve Ax=b with Cholesky */
+        printf ("%8.2f s  | ", toc (t)) ;
+        print_resid (ok, A, x, b, resid) ;      /* print residual */
     }
-    printf ("------------------------------------------------------------------------------------- \n") ;
+
+    /* Entire Cholesky left-looking factorization */
+    for (order = 0 ; order <= 1 ; order++)      /* natural and amd(A+A') */
+    {
+        if (!order && m > 1000) continue ;
+        printf ("entire cholesky left-looking  |     ") ;
+        print_order (order) ; printf ("  |") ;
+        rhs (x, b, m) ;                         /* compute right-hand side */
+        t = tic () ;
+        ok = is_left_cholsol (order, A, x) ;    /* solve Ax=b with Cholesky */
+        printf ("%8.2f s  | ", toc (t)) ;
+        print_resid (ok, A, x, b, resid) ;      /* print residual */
+    }
+    printf ("------------------------------|------------------|---------------|------------|-------------- \n") ;
+    
     return (1) ;
 } 
 

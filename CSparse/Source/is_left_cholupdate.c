@@ -37,13 +37,6 @@ csi is_maj_Lpk (csi Lp_j, csi Lp_j1, csi *Li, csi *I1, csi I1_size)
     return result ;
 }
 
-int csiComparator ( const void * first, const void * second)
-{
-    csi firstCsi = * (const csi *) first ;
-    csi secondCsi = * (const csi *) second ;
-    return (int) firstCsi - secondCsi ;
-}
-
 csi is_unique (csi *vec, csi i, csi *size)
 {
     csi k ;
@@ -116,7 +109,7 @@ csi *is_pre_update (csi *I0, csi I0_size, csi *I1, csi *I1_size, const iss *S)
         }
     }
     *I1_size = count ;
-
+    qsort (I1, *I1_size, sizeof (csi), csiComparator) ;
     return (I1) ;
 }
 

@@ -14,6 +14,7 @@ all: lib cs_demo1 cs_demo2 cs_demo3 is_demo is_demo2 is_demo3 is_left_demo is_up
 	./is_cholesky_demo < ../Matrix/is_matrix1
 	./is_update_demo ../Update/update1_is_matrix1 < ../Matrix/is_matrix1
 	./is_update_demo ../Update/update1_is_matrix2 < ../Matrix/is_matrix2
+	./is_update_demo ../Update/update1_is_matrix3_real < ../Matrix/is_matrix3_real
 
 
 lib:
