@@ -4,17 +4,29 @@
 
 csi is_ind_in_set (csi i, csi *set, csi set_size)
 {
-    csi k = 0 ;
-    while (set [k] != i && k < set_size)
-        k++ ;
+    csi k = 0, pos = -1 ;
+    csi inf = 0, sup = set_size - 1, mil ;
+    /* valeur à rechercher : i */
+    while ((inf<=sup) && (pos==-1))
+    {
+        mil = (sup+inf)/2 + (sup+inf)%2 ;
+        if (i < set [mil])
+            sup = mil - 1 ;
+        else if (i > set [mil])
+            inf = mil + 1 ;
+        else
+            pos = mil ;
+    }
 
-    if (k == set_size)
+    /* terminer */
+
+    if (pos == -1)
         return 0 ;
     else 
         return 1 ;
 }
 
-csi is_maj_Lpk (csi Lp_j, csi Lp_j1, csi *Li, csi *I1, csi I1_size)
+csi is_init_Lpk (csi Lp_j, csi Lp_j1, csi *Li, csi *I1, csi I1_size)
 {
     csi value, value2 ;
     csi result ; /* Lpk [j] */
@@ -136,7 +148,7 @@ csn *is_left_cholupdate (const cs *A, const iss *S, csn *N, csi *I1, csi I1_size
     Lpk = cs_malloc (n, sizeof (csi)) ;     
 
     for (k = 0 ; k < n ; k++)
-        Lpk [k] = is_maj_Lpk (Lp [k], Lp [k+1], Li, I1, I1_size) ;
+        Lpk [k] = is_init_Lpk (Lp [k], Lp [k+1], Li, I1, I1_size) ;
 
     for (k = I1 [o] ; o < I1_size ; k = I1 [++o] )
     {
@@ -154,7 +166,7 @@ csn *is_left_cholupdate (const cs *A, const iss *S, csn *N, csi *I1, csi I1_size
                 a [Li[p]] -= Lx [p]*lkj;
               
             // mise à jour de Lpk [j]
-            Lpk [j] = is_maj_Lpk (Lpk [j], Lp [j+1], Li, I1, I1_size) ;
+            Lpk [j]++ ;
         }
 
         /* L (k,k) = sqrt (a (k)) */ 

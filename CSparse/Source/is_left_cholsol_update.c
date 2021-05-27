@@ -1,7 +1,7 @@
 #include "cs.h"
 
 /* x=A\b where A is symmetric positive definite; b overwritten with solution */
-csi is_left_cholsol_update (csi order, const cs *A, double *b, FILE * filePtr)
+csi is_left_cholsol_update (csi order, cs *A, double *b, FILE * filePtr)
 {
     double *x ;
     iss *S ;
