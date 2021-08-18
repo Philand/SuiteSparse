@@ -12,7 +12,7 @@ all: lib cs_demo1 cs_demo2 cs_demo3 is_demo is_demo2 is_demo3 is_left_demo is_up
 	./is_cholesky_demo < ../Matrix/bcsstk01
 	./is_cholesky_demo < ../Matrix/bcsstk16
 	./is_cholesky_demo < ../Matrix/is_matrix1
-	./is_update_demo ../Update/update1_is_matrix1 < ../Matrix/is_matrix1
+	valgrind ./is_update_demo ../Update/update1_is_matrix1 < ../Matrix/is_matrix1
 	./is_update_demo ../Update/update1_is_matrix2 < ../Matrix/is_matrix2
 	./is_update_demo ../Update/update1_is_matrix3_real < ../Matrix/is_matrix3_real
 	./is_cholesky_demo < ../Matrix/matrixMBK
@@ -23,6 +23,9 @@ all: lib cs_demo1 cs_demo2 cs_demo3 is_demo is_demo2 is_demo3 is_left_demo is_up
 	./is_cholesky_demo < ../Matrix/matrixMBK_ThreeTorusConstraint_DF=-1_t=0,11s
 	./is_cholesky_demo < ../Matrix/matrixMBK_TorusConstantConstraints_DF=2_t=0,61s
 	./is_update_demo ../Update/UpdMBK_TorusConstantConstraint_DF=2_t=0,62s < ../Matrix/matrixMBK_TorusConstantConstraints_DF=2_t=0,61s
+	./is_update_demo ../Update/UpdMBK_TorusConstantConstraints_DF=-4_t=0,36s < ../Matrix/matrixMBK_TorusConstantConstraints_DF=-4_t=0,36s
+	./is_update_demo ../Update/UpdMBK_TorusConstantConstraints_DF=-4_t=0,37s < ../Matrix/matrixMBK_TorusConstantConstraints_DF=-4_t=0,36s
+
 
 
 lib:

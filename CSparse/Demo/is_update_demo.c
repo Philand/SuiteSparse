@@ -167,9 +167,7 @@ csi update_demo (problem *Prob, FILE * filePtr)
         printf ("partial cholesky left-looking |     ") ;
         print_order (order) ; printf ("  |") ;
         rhs (x, b, m) ;                         /* compute right-hand side */
-        t = tic () ;
         ok = is_left_cholsol_update (order, A, x, filePtr) ;    /* solve Ax=b with Cholesky */
-        printf ("%8.2f s  | ", toc (t)) ;
         print_resid (ok, A, x, b, resid) ;      /* print residual */
     }
 

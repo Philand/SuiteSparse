@@ -125,6 +125,45 @@ csi *is_pre_update (csi *I0, csi I0_size, csi *I1, csi *I1_size, const iss *S)
     return (I1) ;
 }
 
+csi *is_pre_update2 (csi *I0, csi I0_size, csi *I1, csi*I1_size, const iss *S, csi nb_col)
+{
+    csi k, i, j, count, I1_max_size, ok = 1 ;
+    csi *parent ;
+    parent = S->parent ;
+    I1_max_size = I0_size ;
+    ok = 1 ;
+
+    count = 0 ;
+
+    csi *I1_bool ;
+    I1_bool = cs_malloc(nb_col, sizeof(csi)) ;
+    memset(I1_bool, 0, nb_col*sizeof(csi)) ;
+    for (k = 0 ; k < I0_size ; k++)
+    {
+        i = I0[k] ;
+        for (j = i ; j != -1 ; j = parent[j])
+        {
+            if (I1_bool[j] == 1) // no need to climb up further, already done.
+                break ;
+            I1_bool[j] = 1 ;
+            count++ ;
+        }
+    }
+
+    *I1_size = I1_max_size = count;
+    I1 = cs_realloc (I1, I1_max_size, sizeof (csi), &ok) ;
+    count = 0;
+    for (k = 0 ; k < nb_col ; k++)
+    {
+        if (I1_bool [k] == 1)
+        {
+            I1 [count++] = k;
+        }
+    }   
+    cs_free(I1_bool) ;
+    return (I1) ;
+}
+
 /* fonction effectuant la mise à jour partielle de Cholesky left-looking */
 csn *is_left_cholupdate (const cs *A, const iss *S, csn *N, csi *I1, csi I1_size)
 {

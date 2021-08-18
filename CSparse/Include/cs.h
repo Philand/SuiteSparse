@@ -113,6 +113,7 @@ csi is_unique (csi *vec, csi i, csi *size) ;
 csi is_add_entry (csi *vec, csi i, csi *size, csi *max_size) ;
 csi *is_load_update_matrix (FILE *f, cs *A, csi *I0, csi *I0_size) ;
 csi *is_pre_update (csi *I0, csi I0_size, csi *I1, csi *I1_size, const iss *S) ;
+csi *is_pre_update2 (csi *I0, csi I0_size, csi *I1, csi *I1_size, const iss *S, csi nb_col) ;
 csn *is_left_cholupdate (const cs *A, const iss *S, csn *N, csi *I1, csi I1_size) ;
 csi is_left_cholsol_update (csi order, cs *A, double *b, FILE * filePtr) ;
 cs *is_symperm (const cs *A, const csi *pinv, csi values) ;
