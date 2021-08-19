@@ -26,6 +26,11 @@ csi is_ind_in_set (csi i, csi *set, csi set_size)
         return 1 ;
 }
 
+/*
+for (k = 0 ; k < n ; k++)
+    Lpk [k] = is_init_Lpk (Lp [k], Lp [k+1], Li, I1, I1_size) ;
+*/
+
 csi is_init_Lpk (csi Lp_j, csi Lp_j1, csi *Li, csi *I1, csi I1_size)
 {
     csi value, value2 ;
@@ -150,15 +155,16 @@ csi *is_pre_update2 (csi *I0, csi I0_size, csi *I1, csi*I1_size, const iss *S, c
         }
     }
 
-    *I1_size = I1_max_size = count;
+    I1_max_size = count;
+    *I1_size = count;
+    //printf ("I1_max_size = %td\n", *I1_size);
+    //printf ("I1_size = %td\n", I1_max_size);
     I1 = cs_realloc (I1, I1_max_size, sizeof (csi), &ok) ;
     count = 0;
     for (k = 0 ; k < nb_col ; k++)
     {
         if (I1_bool [k] == 1)
-        {
             I1 [count++] = k;
-        }
     }   
     cs_free(I1_bool) ;
     return (I1) ;
@@ -184,8 +190,8 @@ csn *is_left_cholupdate (const cs *A, const iss *S, csn *N, csi *I1, csi I1_size
     Ax = A->x ;
     A_colptr = A->p ;
     A_rowind = A->i ;
-    Lpk = cs_malloc (n, sizeof (csi)) ;     
-
+    Lpk = cs_malloc (n, sizeof (csi)) ;
+   
     for (k = 0 ; k < n ; k++)
         Lpk [k] = is_init_Lpk (Lp [k], Lp [k+1], Li, I1, I1_size) ;
 

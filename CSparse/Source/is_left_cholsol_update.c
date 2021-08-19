@@ -37,7 +37,7 @@ csi is_left_cholsol_update (csi order, cs *A, double *b, FILE * filePtr)
     I1 = cs_malloc (I0_size, sizeof (csi)) ;
     I1 = is_pre_update2 (I0, I0_size, I1, &I1_size, S, n) ;
 
-    // C = is_symperm (A, pinv, 1) ;      /* permuting matrix */
+    C = is_symperm (A, pinv, 1) ;
     N = is_left_cholupdate (C, S, N, I1, I1_size) ;
 
     cs_free (I0) ;
