@@ -1,5 +1,7 @@
 #include "cs_demo.h"
+#include "cs.h"
 #include <time.h>
+#include <string.h>
 
 /* -------------------------------------------------------------------------- */
 /* ------------------------------- FUNCTIONS USEFULL ------------------------ */
@@ -126,6 +128,349 @@ problem *free_problem (problem *Prob)
 }
 
 /* -------------------------------------------------------------------------- */
+/* -------------------------------------------------------------------------- */
+/* -------------------------------------------------------------------------- */
+/* -------------------------------------------------------------------------- */
+/* -------------------------------------------------------------------------- */
+/* -------------------------------------------------------------------------- */
+/* -------------------------------------------------------------------------- */
+/* -------------------------------------------------------------------------- */
+/* -------------------------------------------------------------------------- */
+/* -------------------------------------------------------------------------- */
+/* -------------------------------------------------------------------------- */
+/* -------------------------------------------------------------------------- */
+
+csi is_ind_in_set (csi i, csi *set, csi set_size)
+{
+    csi k = 0, pos = -1 ;
+    csi inf = 0, sup = set_size - 1, mil ;
+    /* valeur à rechercher : i */
+    while ((inf<=sup) && (pos==-1))
+    {
+        mil = (sup+inf)/2 + (sup+inf)%2 ;
+        if (i < set [mil])
+            sup = mil - 1 ;
+        else if (i > set [mil])
+            inf = mil + 1 ;
+        else
+            pos = mil ;
+    }
+
+    /* terminer */
+
+    if (pos == -1)
+        return 0 ;
+    else 
+        return 1 ;
+}
+
+/*
+for (k = 0 ; k < n ; k++)
+    Lpk [k] = is_init_Lpk (Lp [k], Lp [k+1], Li, I1, I1_size) ;
+*/
+
+csi is_init_Lpk (csi Lp_j, csi Lp_j1, csi *Li, csi *I1, csi I1_size)
+{
+    csi value, value2 ;
+    csi result ; /* Lpk [j] */
+    value = Lp_j1 ;
+    if (value - Lp_j > 1)
+    {
+        result = Lp_j + 1 ;
+        value2 = value - Lp_j ;
+        while (!is_ind_in_set(Li [result], I1, I1_size) && (value2 > 1))
+        {
+            result++ ;
+            value2-- ;
+        }
+        if (value2 == 1)
+            result = -1 ;
+    }
+    else
+        result = -1 ;
+        
+    return result ;
+}
+
+csi is_unique (csi *vec, csi i, csi *size)
+{
+    csi k ;
+    for (k = 0 ; k < (*size) ; k++)
+    {
+        if (vec [k] == i)
+            return (0) ;
+    }
+    return (1) ;
+}
+
+csi is_add_entry (csi *vec, csi i, csi *size, csi *max_size)
+{
+    csi ok = 1 ;
+    if (!vec || i < 0) return (0) ; /* check inputs */
+    if (!is_unique (vec, i, size)) return (1) ; /* check if i is already in I0 */
+    if (*size >= (*max_size))
+    {
+        (*max_size) *= 2 ;
+        vec = cs_realloc (vec, (*max_size), sizeof (csi), &ok) ;
+    }
+    vec [(*size)++] = i ;
+    return (1) ;
+}
+
+/* load a set I0 and changed values of cs matrix A from a file */
+csi *is_load_update_matrix (FILE *f, cs *A, csi *I0, csi *I0_size)
+{
+    csi i, j, max_size, ok = 1 ;
+    double x ;
+    if (!f) return (NULL) ; /* check inputs */
+    max_size = 2 ;
+    while (fscanf (f, "%td %td %lf\n", &i, &j, &x) == 3)
+    {
+        A->x [(csi) i] = x ;
+        if (!I0 || j < 0) return cs_free (I0) ; /* check inputs */
+        if (!is_unique (I0, j, I0_size)) continue ; /* check if i is already in I0 */
+        if (*I0_size >= max_size)
+        {
+            max_size *= 2 ;
+            I0 = cs_realloc (I0, max_size, sizeof (csi), &ok) ;
+        }
+        I0 [(*I0_size)++] = j ;
+    }
+    qsort (I0, *I0_size, sizeof (csi), csiComparator) ;
+    return (I0) ;
+}
+
+/* load a set I0 and changed values of cs matrix A from a file */
+csi *is_load_update_matrix2 (FILE *f, cs *A, csi *I0, csi *I0_size)
+{
+    csi i, j, k, max_size, ok = 1, count = 0;
+    double x ;
+    csi nb_col = A->n;
+    if (!f) return (NULL) ; /* check inputs */
+    csi *I0_bool;
+    I0_bool = cs_malloc(nb_col, sizeof(csi)) ;
+    memset(I0_bool, 0, nb_col*sizeof(csi)) ;
+
+    while (fscanf (f, "%td %td %lf\n", &i, &j, &x) == 3)
+    {
+        A->x [(csi) i] = x ;
+        if (I0_bool[j] == 0)
+        {
+            I0_bool[j] = 1;
+            count++;
+        }
+    }
+    *I0_size = count;
+    I0 = cs_malloc (2*(*I0_size), sizeof (csi)) ;
+    count = 0;
+    for (k = 0 ; k < nb_col ; k++)
+    {
+        if (I0_bool [k] == 1)
+            I0 [count++] = k;
+    }   
+    cs_free(I0_bool) ;
+    return (I0) ;
+}
+
+/* fonction construisant l'ensemble I1 à partie de l'ensemble I0 */
+csi *is_pre_update (csi *I0, csi I0_size, csi *I1, csi *I1_size, const iss *S)
+{
+    csi k, i, j, count, I1_max_size, ok = 1 ;
+    csi *parent ;
+    parent = S->parent ;
+    I1_max_size = I0_size ;
+    ok = 1 ;
+
+    i = count = 0 ;
+    for (k = I0 [i] ; i < I0_size ; k = I0 [++i] )
+    {
+        for (j = k ; j != -1 ; j = parent [j])
+        {
+            if (!is_unique (I1, j, &count)) continue ;
+            I1 [count++] = j ;
+            if (count == I1_max_size)
+            {
+                I1_max_size *= 2 ;
+                I1 = cs_realloc (I1, I1_max_size, sizeof (csi), &ok) ;
+            }
+        }
+    }
+    *I1_size = count ;
+    qsort (I1, *I1_size, sizeof (csi), csiComparator) ;
+    return (I1) ;
+}
+
+csi *is_pre_update2 (csi *I0, csi I0_size, csi *I1, csi*I1_size, const iss *S, csi nb_col)
+{
+    csi k, i, j, count, I1_max_size, ok = 1 ;
+    csi *parent ;
+    parent = S->parent ;
+    //I1_max_size = I0_size ;
+    ok = 1 ;
+
+    count = 0 ;
+
+    csi *I1_bool ;
+    I1_bool = cs_malloc(nb_col, sizeof(csi)) ;
+    memset(I1_bool, 0, nb_col*sizeof(csi)) ;
+
+    for (k = 0 ; k < I0_size ; k++)
+    {
+        i = I0[k] ;
+        for (j = i ; j != -1 ; j = parent[j])
+        {
+            if (I1_bool[j] == 1) // no need to climb up further, already done.
+                break ;
+            I1_bool[j] = 1 ;
+            count++ ;
+        }
+    }
+
+    I1_max_size = count;
+    *I1_size = count;
+    I1 = cs_malloc (2*I1_max_size, sizeof (csi)) ;
+    count = 0;
+    for (k = 0 ; k < nb_col ; k++)
+    {
+        if (I1_bool [k] == 1)
+            I1 [count++] = k;
+    }   
+    cs_free(I1_bool) ;
+    return (I1) ;
+}
+
+/* fonction effectuant la mise à jour partielle de Cholesky left-looking */
+csn *is_left_cholupdate (const cs *A, const iss *S, csn *N, csi *I1, csi I1_size)
+{
+    cs *L ;
+    csi k, n, i, j, o ;
+    csi *A_colptr, *A_rowind, *Lp, *Li, *L_rowptr, *L_colind, *Lpk ;
+    double lkj, lkk ;
+    double *Ax, *a, *Lx ;
+
+    n = A->n ;
+    L = N->L ;
+    Lp = L->p ; Li = L->i ; Lx = L->x ;
+    o = 0 ;
+
+    L_colind = S->L_colind ;
+    L_rowptr =  S->L_rowptr ;
+    a = cs_malloc (n, sizeof (double)) ; /* get csi workspace */
+    Ax = A->x ;
+    A_colptr = A->p ;
+    A_rowind = A->i ;
+    Lpk = cs_malloc (n, sizeof (csi)) ;
+   
+    for (k = 0 ; k < n ; k++)
+        Lpk [k] = is_init_Lpk (Lp [k], Lp [k+1], Li, I1, I1_size) ;
+
+    for (k = I1 [o] ; o < I1_size ; k = I1 [++o] )
+    {
+        /* a (k:n) = A (k:n,k) */
+        for (i = A_colptr [k] ; i < A_colptr [k+1] ; i++)
+            a [A_rowind [i]] = Ax [i] ;
+
+        /* for j = find (L (k,;)) */
+        for (i = L_rowptr [k] ; i < L_rowptr [k+1] ; i++)
+        {
+            j = L_colind [i] ;
+            lkj = Lx [Lpk [j]] ;
+              
+            for (int p = Lpk [j] ; p < Lp [j+1] ; p++)
+                a [Li[p]] -= Lx [p]*lkj;
+              
+            // mise à jour de Lpk [j]
+            Lpk [j]++ ;
+        }
+
+        /* L (k,k) = sqrt (a (k)) */ 
+        Lx [ Lp [k]] = lkk = sqrt (a [Li [Lp [k]]]) ;
+        a [Li [Lp [k]]] = 0.0 ;
+
+        /* L (k+1:n,k) = a (k+1:n) / L (k,k) */
+        for (j = Lp [k] + 1 ; j < Lp [k+1] ; j++)
+        {
+            Lx [j] = a [Li [j]] / lkk ;
+            a [Li [j]] = 0.0 ;
+        }
+    }
+
+    cs_free (Lpk) ;
+    cs_free (a) ;
+
+    return N ;
+}
+
+/* x=A\b where A is symmetric positive definite; b overwritten with solution */
+csi is_left_cholsol_update (csi order, cs *A, double *b, FILE * filePtr)
+{
+    double *x, t ;
+    iss *S ;
+    csn *N ;
+    cs *C ;
+    csi n, ok, *Perm, *pinv ;
+    csi *I0, *I1 ;
+    csi I0_size, I1_size ;
+    if (!CS_CSC (A) || !b) return (0) ;     /* check inputs */
+    n = A->n ;
+
+    Perm = cs_amd (order, A) ;     /* P = amd(A+A'), or natural */
+    pinv = cs_pinv (Perm, n) ;     /* find inverse permutation */
+    cs_free (Perm) ;
+    if (order && !pinv) return (0) ;
+
+    C = is_symperm (A, pinv, 1) ;      /* permuting matrix */
+    S = is_left_schol (order, C) ;     /* ordering and symbolic analysis */
+    N = is_left_chol (C, S) ;          /* numeric Cholesky factorization */
+    x = cs_malloc (n, sizeof (double)) ;    /* get workspace */
+    print_fill_in (C, N) ;
+    //printf ("L = \n") ; cs_print (N->L, 0) ;
+
+    I0_size = I1_size = 0 ;
+    I0 = cs_malloc (2, sizeof (csi)) ;
+    I0 = is_load_update_matrix2 (filePtr, A, I0, &I0_size) ;
+
+    C = is_symperm (A, pinv, 1) ;
+    t = tic () ;
+    // I1 = cs_malloc (I0_size, sizeof (csi)) ;
+    I1 = is_pre_update2 (I0, I0_size, I1, &I1_size, S, n) ;
+
+    N = is_left_cholupdate (C, S, N, I1, I1_size) ;
+
+    cs_free (I0) ;
+    cs_free (I1) ;
+
+    ok = (S && N && x) ;
+    if (ok)
+    {
+        cs_ipvec (pinv, b, x, n) ;   /* x = P*b */
+        cs_lsolve (N->L, x) ;        /* x = L\x */
+        cs_ltsolve (N->L, x) ;       /* x = L'\x */
+        cs_pvec (pinv, x, b, n) ;    /* b = P'*x */
+    }
+    cs_free (x) ;
+    cs_free (pinv) ;
+    is_sfree (S) ;
+    cs_nfree (N) ;
+    cs_spfree (C) ;
+    printf (" %8.6f s | ", toc (t)) ;
+    return (ok) ;
+}
+
+/* -------------------------------------------------------------------------- */
+/* -------------------------------------------------------------------------- */
+/* -------------------------------------------------------------------------- */
+/* -------------------------------------------------------------------------- */
+/* -------------------------------------------------------------------------- */
+/* -------------------------------------------------------------------------- */
+/* -------------------------------------------------------------------------- */
+/* -------------------------------------------------------------------------- */
+/* -------------------------------------------------------------------------- */
+/* -------------------------------------------------------------------------- */
+/* -------------------------------------------------------------------------- */
+/* -------------------------------------------------------------------------- */
+
+/* -------------------------------------------------------------------------- */
 /* ------------------------------- UPDATE DEMO ------------------------------ */
 /* -------------------------------------------------------------------------- */
 
@@ -183,7 +528,7 @@ csi update_demo (problem *Prob, FILE * filePtr)
         t = tic () ;
         //printf ("A = \n") ; cs_print (A, 0) ;
         ok = is_left_cholsol (order, A, x) ;    /* solve Ax=b with Cholesky */
-        printf ("%8.2f s  | ", toc (t)) ;
+        printf (" %8.6f s | ", toc (t)) ;
         print_resid (ok, A, x, b, resid) ;      /* print residual */
         // printf("\n");
     }

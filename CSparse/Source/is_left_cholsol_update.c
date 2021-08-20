@@ -31,13 +31,13 @@ csi is_left_cholsol_update (csi order, cs *A, double *b, FILE * filePtr)
 
     I0_size = I1_size = 0 ;
     I0 = cs_malloc (2, sizeof (csi)) ;
-    I0 = is_load_update_matrix (filePtr, A, I0, &I0_size) ;
-
-    t = tic () ;
-    I1 = cs_malloc (I0_size, sizeof (csi)) ;
-    I1 = is_pre_update2 (I0, I0_size, I1, &I1_size, S, n) ;
+    I0 = is_load_update_matrix2 (filePtr, A, I0, &I0_size) ;
 
     C = is_symperm (A, pinv, 1) ;
+    t = tic () ;
+    // I1 = cs_malloc (I0_size, sizeof (csi)) ;
+    I1 = is_pre_update2 (I0, I0_size, I1, &I1_size, S, n) ;
+
     N = is_left_cholupdate (C, S, N, I1, I1_size) ;
 
     cs_free (I0) ;
@@ -56,6 +56,6 @@ csi is_left_cholsol_update (csi order, cs *A, double *b, FILE * filePtr)
     is_sfree (S) ;
     cs_nfree (N) ;
     cs_spfree (C) ;
-    printf ("%8.2f s  | ", toc (t)) ;
+    printf (" %8.6f s | ", toc (t)) ;
     return (ok) ;
 }

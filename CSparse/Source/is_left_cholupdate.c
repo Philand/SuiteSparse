@@ -135,7 +135,7 @@ csi *is_pre_update2 (csi *I0, csi I0_size, csi *I1, csi*I1_size, const iss *S, c
     csi k, i, j, count, I1_max_size, ok = 1 ;
     csi *parent ;
     parent = S->parent ;
-    I1_max_size = I0_size ;
+    //I1_max_size = I0_size ;
     ok = 1 ;
 
     count = 0 ;
@@ -159,7 +159,7 @@ csi *is_pre_update2 (csi *I0, csi I0_size, csi *I1, csi*I1_size, const iss *S, c
     *I1_size = count;
     //printf ("I1_max_size = %td\n", *I1_size);
     //printf ("I1_size = %td\n", I1_max_size);
-    I1 = cs_realloc (I1, I1_max_size, sizeof (csi), &ok) ;
+    I1 = cs_malloc (2*I1_max_size, sizeof (csi)) ;
     count = 0;
     for (k = 0 ; k < nb_col ; k++)
     {

@@ -96,7 +96,7 @@ problem *get_problem (FILE *f, double tol)
     m = A->m ; n = A->n ;
     mn = CS_MAX (m,n) ;
     nz1 = A->p [n] ;
-    cs_dropzeros (A) ;                  /* drop zero entries */
+    //cs_dropzeros (A) ;                  /* drop zero entries */
     nz2 = A->p [n] ;
     if (tol > 0) cs_droptol (A, tol) ;  /* drop tiny entries (just to test) */
     Prob->C = C = sym ? make_sym (A) : A ;  /* C = A + triu(A,1)', or C=A */
@@ -164,7 +164,7 @@ csi cholesky_demo (problem *Prob)
         rhs (x, b, m) ;                         /* compute right-hand side */
         t = tic () ;
         ok = cs_cholsol (order, C, x) ;         /* solve Ax=b with Cholesky */
-        printf ("%8.2f s  | ", toc (t)) ;
+        printf (" %8.6f s | ", toc (t)) ;
         print_resid (ok, C, x, b, resid) ;      /* print residual */
     }
 
@@ -180,7 +180,7 @@ csi cholesky_demo (problem *Prob)
         rhs (x, b, m) ;                         /* compute right-hand side */
         t = tic () ;
         ok = is_left_cholsol (order, A, x) ;    /* solve Ax=b with Cholesky */
-        printf ("%8.2f s  | ", toc (t)) ;
+        printf (" %8.6f s | ", toc (t)) ;
         print_resid (ok, A, x, b, resid) ;      /* print residual */
     }
     printf ("------------------------------------------------------------------------------------- \n") ;
