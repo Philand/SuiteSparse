@@ -5,18 +5,8 @@ LDLIBS += -lm
 CS = $(LDFLAGS) ../Lib/libcsparse.a $(LDLIBS)
 
 all: lib cs_demo1 cs_demo2 cs_demo3 is_demo is_demo2 is_demo3 is_left_demo is_up_demo is_cholesky_demo is_update_demo
-	./is_update_demo ../Update/U1/UpdMBK_TCC_DF=2_t=0,48s < ../Matrix/M1/matrixMBK_TCC_DF=2_t=0,48s
-	./is_update_demo ../Update/U1/UpdMBK_TCC_DF=2_t=0,48s < ../Matrix/M1/matrixMBK_TCC_DF=2_t=0,48s
-	./is_update_demo ../Update/U1/UpdMBK_TCC_DF=2_t=0,48s < ../Matrix/M1/matrixMBK_TCC_DF=2_t=0,48s
-	./is_update_demo ../Update/U1/UpdMBK_TCC_DF=2_t=0,48s < ../Matrix/M1/matrixMBK_TCC_DF=2_t=0,48s
-	./is_update_demo ../Update/U1/UpdMBK_TCC_DF=2_t=0,48s < ../Matrix/M1/matrixMBK_TCC_DF=2_t=0,48s
-	./is_update_demo ../Update/U1/UpdMBK_TCC_DF=2_t=0,48s < ../Matrix/M1/matrixMBK_TCC_DF=2_t=0,48s
-	./is_update_demo ../Update/U1/UpdMBK_TCC_DF=2_t=0,48s < ../Matrix/M1/matrixMBK_TCC_DF=2_t=0,48s
-	./is_update_demo ../Update/U1/UpdMBK_TCC_DF=2_t=0,48s < ../Matrix/M1/matrixMBK_TCC_DF=2_t=0,48s
-	./is_update_demo ../Update/U1/UpdMBK_TCC_DF=2_t=0,48s < ../Matrix/M1/matrixMBK_TCC_DF=2_t=0,48s
-	./is_update_demo ../Update/U1/UpdMBK_TCC_DF=2_t=0,48s < ../Matrix/M1/matrixMBK_TCC_DF=2_t=0,48s
-
-
+	./is_cholesky_demo < ../Matrix/is_matrix3_real
+	./is_update_demo ../Update/update1_is_matrix3_real < ../Matrix/is_matrix3_real
 
 lib:
 	( cd ../Lib ; $(MAKE) )

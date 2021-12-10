@@ -112,16 +112,27 @@ iss *is_left_schol (csi order, const cs *A)
 
         /* --- structure of column k ---------------------------------------- */
         /* L_k = A_k */
+
+        /*
+        printf("\n <><><> Vérification structure des colonnes <><><> \n");
+        printf("P = [ ");
+        for (int o = 0; o < n; o++)
+        {
+            printf("%td , ", P[o]);
+        }
+        printf("]\n");*/
+
         for (i = A_colptr [k] ; i < A_colptr [k+1] ; i++)
             P [A_rowind [i]] = 1 ;
 
-        /* for all i such that pi [k] = i */
+        /* for all i such that pi [i] = k */
         for (i = L_rowptr [k] ; i < L_rowptr [k+1] ; i++)
         {
             j = L_colind [i] ;
             if (parent [j] == k)
                 is_bool_union(&P [0], &L_rowind [L_colptr [j]], L_colptr [j+1] - L_colptr [j], j) ;
         }
+
         nb_nz_col = is_build_column (&L_rowind [L_colptr [k]], &P [0], n, k) ;
         L_colptr [k+1] = L_colptr [k] + nb_nz_col ;
     }
@@ -160,8 +171,7 @@ iss *is_left_schol (csi order, const cs *A)
     {
         printf ("%td  ;  ", parent [k]) ;
     }
-    printf ("\n") ;
-    */
+    printf ("\n") ;*/
     
     cs_free (stack) ;
     cs_free (P) ;

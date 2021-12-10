@@ -23,8 +23,8 @@ iss *is_symalloc (cs const *A)
     iss *S = cs_calloc (1, sizeof (iss)) ;
     S->L_colptr = cs_malloc (n+1, sizeof(csi)) ;
     S->L_rowptr = cs_malloc (n+1, sizeof(csi)) ;
-    S->L_rowind = cs_malloc (10 * A_colptr [n], sizeof(csi)) ;
-    S->L_colind = cs_malloc (10 * A_colptr [n], sizeof(csi)) ;
+    S->L_rowind = cs_malloc (10 * A_colptr [n], sizeof(csi)) ; // WARNING : depends of the fill-in
+    S->L_colind = cs_malloc (10 * A_colptr [n], sizeof(csi)) ; // WARNING : depends of the fill-in
     S->parent = cs_malloc (n, sizeof(csi)) ;
     return S ;
 }

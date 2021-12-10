@@ -96,7 +96,7 @@ problem *get_problem (FILE *f, double tol)
     m = A->m ; n = A->n ;
     mn = CS_MAX (m,n) ;
     nz1 = A->p [n] ;
-    //cs_dropzeros (A) ;                  /* drop zero entries */
+    cs_dropzeros (A) ;                  /* drop zero entries */
     nz2 = A->p [n] ;
     if (tol > 0) cs_droptol (A, tol) ;  /* drop tiny entries (just to test) */
     Prob->C = C = sym ? make_sym (A) : A ;  /* C = A + triu(A,1)', or C=A */
@@ -174,7 +174,7 @@ csi cholesky_demo (problem *Prob)
 
     for (order = 0 ; order <= 1 ; order++)      /* natural and amd(A+A') */
     {
-        if (!order && m > 1000) continue ;
+        //if (!order && m > 1000) continue ;
         printf ("cholesky left-looking |     ") ;
         print_order (order) ; printf ("  |") ;
         rhs (x, b, m) ;                         /* compute right-hand side */

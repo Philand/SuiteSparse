@@ -63,7 +63,7 @@ csn *is_left_chol (const cs *A, const iss *S)
               
             for (int p = Lpk [j] ; p < Lp [j+1] ; p++)
                   a [L_rowind[p]] -= Lx [p]*lkj;
-              
+        
             Lpk [j] ++ ;
         }
 

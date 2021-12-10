@@ -1,0 +1,14 @@
+{
+    "files.associations": {
+        "cs.h": "c",
+        "cs_demo.h": "c",
+        "array": "c",
+        "atomic": "c",
+        "cstddef": "c",
+        "string_view": "c",
+        "algorithm": "c",
+        "memory": "c",
+        "initializer_list": "c",
+        "utility": "c"
+    }
+}
